@@ -1,4 +1,4 @@
-# 🏥 CipherKnights CareApp - Django Healthcare Management System  
+# 🏥 Ci-Wellbeing - Django Healthcare Management System  
 
 A **secure healthcare management application** built with **Django**, designed for care homes to manage **service users, healthcare workers, and daily activities**.  
 This project focuses not only on **care delivery & documentation** but also on **cybersecurity monitoring** to detect and mitigate different types of cyber attacks.  
@@ -26,7 +26,7 @@ This project focuses not only on **care delivery & documentation** but also on *
 
 ## 🔒 Security First  
 
-Unlike traditional healthcare apps, **CipherKnights CareApp** is built with **security as a core feature**:  
+Unlike traditional healthcare apps, **Ci-Wellbeing** is built with **security as a core feature**:  
 - Monitors logins & access attempts  
 - Alerts admins of suspicious behavior  
 - Designed to mitigate brute-force, session hijacking, and privilege escalation attacks  
