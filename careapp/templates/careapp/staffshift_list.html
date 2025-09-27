@@ -1,0 +1,438 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h2 class="page-title">
+                    <i class="fas fa-calendar-alt"></i> Staff Shifts
+                </h2>
+                <div class="header-actions">
+                    {% if user.is_staff or user.profile.role == 'management' %}
+                    <a href="{% url 'staffshift_create' %}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> New Shift
+                    </a>
+                    {% endif %}
+                    <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#filterModal">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <div class="view-toggle btn-group ml-2">
+                        <button class="btn btn-outline-secondary {% if request.GET.view != 'table' %}active{% endif %}" id="cardViewBtn" onclick="toggleView('cards')">
+                            <i class="fas fa-th-large"></i> Cards
+                        </button>
+                        <button class="btn btn-outline-secondary {% if request.GET.view == 'table' %}active{% endif %}" id="tableViewBtn" onclick="toggleView('table')">
+                            <i class="fas fa-table"></i> Table
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card View -->
+    <div id="cardView" class="{% if request.GET.view == 'table' %}d-none{% endif %}">
+        <div class="row">
+            {% for shift in shifts %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shift-card h-100">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">{{ shift.staff_member.user.get_full_name }}</h5>
+                            <span class="badge badge-{% if shift.is_completed %}success{% else %}warning{% endif %}">
+                                {{ shift.is_completed|yesno:"Completed,Scheduled" }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="shift-details">
+                            <div class="detail-item">
+                                <i class="fas fa-calendar-day mr-2"></i>
+                                <span>{{ shift.shift_date|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-clock mr-2"></i>
+                                <span>{{ shift.start_time }} - {{ shift.end_time }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tag mr-2"></i>
+                                <span>{{ shift.get_shift_type_display }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-clock mr-2"></i>
+                                <span>Duration: {{ shift.duration_hours }} hours</span>
+                            </div>
+                            {% if shift.notes %}
+                            <div class="detail-item">
+                                <i class="fas fa-sticky-note mr-2"></i>
+                                <span class="text-muted">{{ shift.notes|truncatewords:10 }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-sm btn-outline-primary" onclick="location.href='{% url 'staffshift_detail' shift.pk %}'">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            {% if user.is_staff or user.profile.role == 'management' %}
+                            <button class="btn btn-sm btn-outline-secondary" onclick="location.href='{% url 'staffshift_update' shift.pk %}'">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <form method="post" action="{% url 'staffshift_toggle_completed' shift.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm {% if shift.is_completed %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                                    <i class="fas {% if shift.is_completed %}fa-undo{% else %}fa-check{% endif %}"></i>
+                                    {% if shift.is_completed %}Reopen{% else %}Complete{% endif %}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle"></i> No shifts found.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Table View -->
+    <div id="tableView" class="{% if request.GET.view != 'table' %}d-none{% endif %}">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Staff Member</th>
+                                <th>Shift Date</th>
+                                <th>Shift Type</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for shift in shifts %}
+                            <tr>
+                                <td>{{ shift.staff_member.user.get_full_name }}</td>
+                                <td>{{ shift.shift_date|date:"M d, Y" }}</td>
+                                <td>{{ shift.get_shift_type_display }}</td>
+                                <td>{{ shift.start_time }}</td>
+                                <td>{{ shift.end_time }}</td>
+                                <td>{{ shift.duration_hours }} hours</td>
+                                <td>
+                                    <span class="badge badge-{% if shift.is_completed %}success{% else %}warning{% endif %}">
+                                        {{ shift.is_completed|yesno:"Completed,Scheduled" }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="location.href='{% url 'staffshift_detail' shift.pk %}'">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if user.is_staff or user.profile.role == 'management' %}
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="location.href='{% url 'staffshift_update' shift.pk %}'">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <form method="post" action="{% url 'staffshift_toggle_completed' shift.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm {% if shift.is_completed %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                                                <i class="fas {% if shift.is_completed %}fa-undo{% else %}fa-check{% endif %}"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center">No shifts found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Enhanced Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Filter Shifts</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="get" id="filterForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="staff_member">Staff Member</label>
+                                <select class="form-control" id="staff_member" name="staff_member">
+                                    <option value="">All Staff Members</option>
+                                    {% for staff in all_staff %}
+                                    <option value="{{ staff.id }}" {% if request.GET.staff_member == staff.id|stringformat:"s" %}selected{% endif %}>{{ staff.user.get_full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="shift_type">Shift Type</label>
+                                <select class="form-control" id="shift_type" name="shift_type">
+                                    <option value="">All Shift Types</option>
+                                    <option value="morning" {% if request.GET.shift_type == 'morning' %}selected{% endif %}>Morning</option>
+                                    <option value="evening" {% if request.GET.shift_type == 'evening' %}selected{% endif %}>Evening</option>
+                                    <option value="night" {% if request.GET.shift_type == 'night' %}selected{% endif %}>Night</option>
+                                    <option value="long_day" {% if request.GET.shift_type == 'long_day' %}selected{% endif %}>Long Day</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_from">Date From</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.GET.date_from }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_to">Date To</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.GET.date_to }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="is_completed">Status</label>
+                                <select class="form-control" id="is_completed" name="is_completed">
+                                    <option value="">All Statuses</option>
+                                    <option value="true" {% if request.GET.is_completed == "true" %}selected{% endif %}>Completed</option>
+                                    <option value="false" {% if request.GET.is_completed == "false" %}selected{% endif %}>Scheduled</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="duration">Minimum Duration (hours)</label>
+                                <input type="number" class="form-control" id="duration" name="duration" value="{{ request.GET.duration }}" min="0" step="0.5" placeholder="e.g., 4.5">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="search">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" value="{{ request.GET.search }}" placeholder="Search by staff name or notes">
+                    </div>
+                    
+                    <input type="hidden" name="view" id="viewType" value="{{ request.GET.view|default:'cards' }}">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">Clear All Filters</button>
+                <button type="button" class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.view-toggle .btn.active {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.shift-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid rgba(0,0,0,0.125);
+    border-radius: 0.5rem;
+}
+
+.shift-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.shift-details {
+    margin-top: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    color: #6c757d;
+}
+
+.detail-item i {
+    width: 16px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.btn-group .btn {
+    margin-right: 5px;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-success { background: #28a745; color: white; }
+.badge-warning { background: #ffc107; color: black; }
+
+.card-title {
+    color: var(--secondary-color);
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .shift-card .card-footer .d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .shift-card .card-footer .btn {
+        width: 100%;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap components
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Set active state for view buttons
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view');
+    if (view === 'table') {
+        document.getElementById('cardViewBtn').classList.remove('active');
+        document.getElementById('tableViewBtn').classList.add('active');
+    } else {
+        document.getElementById('cardViewBtn').classList.add('active');
+        document.getElementById('tableViewBtn').classList.remove('active');
+    }
+    
+    // Set the view type in the filter form
+    document.getElementById('viewType').value = view || 'cards';
+});
+
+function toggleView(viewType) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('view', viewType);
+    
+    // Preserve other filter parameters
+    {% for key, value in request.GET.items %}
+    {% if key != 'view' and key != 'page' %}
+    urlParams.set('{{ key }}', '{{ value }}');
+    {% endif %}
+    {% endfor %}
+    
+    window.location.href = '?' + urlParams.toString();
+}
+
+function applyFilters() {
+    // Get the current view type
+    const viewType = document.getElementById('viewType').value;
+    
+    // Submit the form
+    document.getElementById('filterForm').submit();
+}
+
+function clearFilters() {
+    // Redirect to the list page with only the view parameter
+    const urlParams = new URLSearchParams();
+    urlParams.set('view', document.getElementById('viewType').value);
+    window.location.href = '?' + urlParams.toString();
+}
+</script>
+{% endblock %}

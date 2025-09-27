@@ -1,0 +1,21 @@
+{% extends 'careapp/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>{{ title }}</h2>
+    </div>
+    <div class="col-md-6 text-right">
+        <a href="{% url 'staff_member_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% crispy form %}
+    </div>
+</div>
+{% endblock %}

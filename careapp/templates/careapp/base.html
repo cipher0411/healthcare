@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ci-Wellbeing Care Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'fontawesome/css/all.min.css' %}" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #A8CBB7;
+            --primary-dark: #8ab09d;
+            --secondary-color: #4a7b5d;
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+            --white: #ffffff;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: var(--white);
+            box-shadow: var(--shadow);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo h1 {
+            color: var(--secondary-color);
+            font-size: 1.5rem;
+        }
+
+        .logo i {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+        }
+
+        .desktop-nav ul {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+        }
+
+        .desktop-nav a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+
+        .desktop-nav a:hover, .desktop-nav a.active {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            cursor: pointer;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: bold;
+        }
+
+        /* Profile Sidebar */
+        .profile-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background-color: var(--white);
+            box-shadow: var(--shadow);
+            z-index: 200;
+            transition: var(--transition);
+            padding: 2rem 1.5rem;
+            overflow-y: auto;
+        }
+
+        .profile-sidebar.open {
+            right: 0;
+        }
+
+        .profile-sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .close-sidebar {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            cursor: pointer;
+        }
+
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .profile-details h3 {
+            margin-bottom: 0.3rem;
+            color: var(--secondary-color);
+        }
+
+        .profile-details p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .profile-links {
+            list-style: none;
+        }
+
+        .profile-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-links a {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 1rem;
+            text-decoration: none;
+            color: var(--text-color);
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .profile-links a:hover {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .profile-links i {
+            font-size: 1.2rem;
+            width: 25px;
+        }
+
+        .link-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .link-section h4 {
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+            padding-left: 1rem;
+            font-size: 1rem;
+        }
+
+        /* Mobile Navigation */
+        .mobile-nav {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            width: 300px;
+            height: 100vh;
+            background-color: var(--white);
+            box-shadow: var(--shadow);
+            z-index: 200;
+            transition: var(--transition);
+            padding: 2rem 1rem;
+            overflow-y: auto;
+        }
+
+        .mobile-nav.open {
+            left: 0;
+        }
+
+        .mobile-nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .close-menu {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            cursor: pointer;
+        }
+
+        .mobile-nav ul {
+            list-style: none;
+        }
+
+        .mobile-nav li {
+            margin-bottom: 0.5rem;
+        }
+
+        .mobile-nav a {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 1rem;
+            text-decoration: none;
+            color: var(--text-color);
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .mobile-nav a:hover, .mobile-nav a.active {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .mobile-nav i {
+            font-size: 1.2rem;
+            width: 25px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 150;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        /* Main Content */
+        main {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            margin-bottom: 2rem;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-title i {
+            color: var(--primary-color);
+        }
+
+        /* Dashboard Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background-color: var(--white);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .stat-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .stat-card p {
+            color: #666;
+        }
+
+        /* Activity List */
+        .activity-list {
+            background-color: var(--white);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 1.2rem;
+            margin-right: 1rem;
+        }
+
+        .activity-details {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .activity-details h4 {
+            margin-bottom: 0.3rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .activity-time {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: var(--white);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .modal-title {
+            margin-bottom: 1.5rem;
+            color: var(--secondary-color);
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Alert Messages */
+        .alert-container {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1100;
+            max-width: 400px;
+        }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 6px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .desktop-nav {
+                display: none;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+            
+            .profile-sidebar {
+                width: 350px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem;
+            }
+
+            main {
+                padding: 1rem;
+            }
+
+            .logo h1 {
+                font-size: 1.2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .profile-sidebar {
+                width: 300px;
+            }
+            
+            .alert-container {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .user-profile span {
+                display: none;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
+            
+            .profile-sidebar {
+                width: 280px;
+                padding: 1.5rem 1rem;
+            }
+            
+            .profile-info {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Overlay for mobile menu and profile sidebar -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Alert Messages Container -->
+    <div class="alert-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    <i class="fas 
+                        {% if message.tags == 'success' %}fa-check-circle
+                        {% elif message.tags == 'error' %}fa-exclamation-circle
+                        {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                        {% else %}fa-info-circle{% endif %}">
+                    </i>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <i class="fas fa-heartbeat"></i>
+            <h1>Ci-Wellbeing</h1>
+        </div>
+
+        <nav class="desktop-nav">
+            <ul>
+                {% if request.user.is_superuser or is_management or is_staff %}
+                <li><a href="{% url 'dashboard' %}" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a></li>
+                <li><a href="{% url 'serviceuser_list' %}" class="{% if 'serviceuser' in request.path %}active{% endif %}">Service Users</a></li>
+                <li><a href="{% url 'activity_list' %}" class="{% if 'activity' in request.path %}active{% endif %}">Activities</a></li>
+                <li><a href="{% url 'incident_list' %}" class="{% if 'incident' in request.path %}active{% endif %}">Incidents</a></li>
+                <li><a href="{% url 'staffhandover_list' %}" class="{% if 'staffhandover_list' in request.path %}active{% endif %}">Handover</a></li>
+                <li><a href="{% url 'medication_dashboard' %}" class="{% if 'medication' in request.path %}active{% endif %}">Medications</a></li>
+                {% endif %}
+                
+                {% if request.user.is_superuser or is_management or is_staff %}
+                <li><a href="{% url 'dailysummary_list' %}" class="{% if 'dailysummary' in request.path %}active{% endif %}">Daily Summary</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+
+        <button class="mobile-menu-btn" id="mobileMenuBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="user-profile" id="userProfileBtn">
+            <div class="user-avatar">{{ request.user.first_name|first }}{{ request.user.last_name|first }}</div>
+        </div>
+    </header>
+
+    <!-- Profile Sidebar -->
+    <div class="profile-sidebar" id="profileSidebar">
+        <div class="profile-sidebar-header">
+            <h2>User Profile</h2>
+            <button class="close-sidebar" id="closeSidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="profile-info">
+            <div class="profile-avatar">{{ request.user.first_name|first }}{{ request.user.last_name|first }}</div>
+            <div class="profile-details">
+                <h3>{{ request.user.first_name }} {{ request.user.last_name }}</h3>
+                <p>
+                    {% if request.user.is_superuser %}Administrator
+                    {% elif is_management %}Management User
+                    {% elif is_staff %}Staff Member
+                    {% elif is_cqc %}CQC Member
+                    {% else %}User{% endif %}
+                </p>
+            </div>
+        </div>
+        
+        <ul class="profile-links">
+            <!-- Common Links for All Users -->
+            <li><a href="{% url 'dashboard' %}"><i class="fas fa-th-large"></i> Dashboard</a></li>
+            <li><a href="#"><i class="fas fa-user-circle"></i> My Profile</a></li>
+            <form method="post" action="{% url 'logout' %}" id="logout-form" style="display: none;">
+                {% csrf_token %}
+            </form>
+            
+            
+            
+            <!-- Management User Links -->
+            {% if is_management %}
+            <div class="link-section">
+                <h4>Management</h4>
+                <li><a href="{% url 'management_dashboard' %}"><i class="fas fa-chart-line"></i> Management Dashboard</a></li>
+                <li><a href="{% url 'managementdailynote_list' %}"><i class="fas fa-clipboard"></i> Daily Notes</a></li>
+                <li><a href="{% url 'managementhandover_list' %}"><i class="fas fa-exchange-alt"></i> Handovers</a></li>
+                <li><a href="{% url 'staffhandover_list' %}"><i class="fas fa-exchange-alt"></i>Staff Handovers</a></li>
+                <li><a href="{% url 'governancerecord_list' %}"><i class="fas fa-file-contract"></i> Governance Records</a></li>
+                <li><a href="{% url 'staff_member_list' %}"><i class="fas fa-user-tie"></i> Staff Management</a></li>
+                <li><a href="{% url 'security_dashboard' %}"><i class="fas fa-secure"></i> Manage Security</a></li>
+                <li><a href="{% url 'department_list' %}"><i class="fas fa-building"></i> Departments</a></li>
+                <li><a href="{% url 'managementdailynote_list' %}" class="{% if 'management' in request.path %}active{% endif %}"><i class="fas fa-chart-line"></i> Management Daily Notes</a></li>
+                <li><a href="{% url 'role_list' %}"><i class="fas fa-id-card"></i> Roles</a></li>
+                <li><a href="{% url 'riskassessment_list' %}"><i class="fas fa-clipboard-check"></i> Risk Assessments</a></li>
+                <li><a href="{% url 'vitalsigns_list' %}"><i class="fas fa-heartbeat"></i> Vital Signs</a></li>
+                <li><a href="{% url 'staffshift_list' %}"><i class="fas fa-clock"></i> My Shifts</a></li>
+                <li><a href="{% url 'document_list' %}"><i class="fas fa-file"></i> Documents</a></li>
+                <li><a href="{% url 'incident_list' %}"><i class="fas fa-exclamation-circle"></i> Incidents/ABC</a></li>
+                <li><a href="{% url 'appointment_list' %}"><i class="fas fa-calendar-check"></i> Appointments</a></li>
+                <li><a href="{% url 'medication_list' %}"><i class="fas fa-syringe"></i>Manage Medications</a></li>
+                <li><a href="{% url 'visitor_list' %}"><i class="fas fa-users"></i> Visitors</a></li>
+                <li><a href="{% url 'trip_list' %}"><i class="fas fa-car"></i> Trips</a></li>
+                <li><a href="{% url 'medication_administration_list' %}"><i class="fas fa-pills"></i> Administer Meds</a></li>
+                <li><a href="{% url 'careplan_list' %}" class="{% if 'careplan' in request.path %}active{% endif %}"><i class="fas fa-clipboard-list"></i> Care Plans</a></li>
+                <li><a href="{% url 'pbsplan_list' %}" class="{% if 'pbsplan' in request.path %}active{% endif %}"><i class="fas fa-shield-alt"></i> PBS Plans</a></li>
+                
+            </div>
+            {% endif %}
+            
+            <!-- Staff Member Links -->
+            {% if is_staff %}
+            <div class="link-section">
+                <h4>Care Management</h4>
+                <li><a href="{% url 'governancerecord_list' %}"><i class="fas fa-file-contract"></i> Governance Records</a></li>
+                <li><a href="{% url 'staff_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Staff Dashboard</a></li>
+                <li><a href="{% url 'serviceuser_list' %}"><i class="fas fa-users"></i> Service Users</a></li>
+                <li><a href="{% url 'activity_list' %}"><i class="fas fa-walking"></i> Activities</a></li>
+                <li><a href="{% url 'document_list' %}"><i class="fas fa-file"></i> Documents</a></li>
+                <li><a href="{% url 'incident_list' %}"><i class="fas fa-exclamation-circle"></i> Incidents/ABC</a></li>
+                <li><a href="{% url 'appointment_list' %}"><i class="fas fa-calendar-check"></i> Appointments</a></li>
+                <li><a href="{% url 'dailysummary_list' %}"><i class="fas fa-clipboard-list"></i> Daily Summaries</a></li>
+                <li><a href="{% url 'staffhandover_list' %}"><i class="fas fa-exchange-alt"></i> Handovers</a></li>
+                <li><a href="{% url 'vitalsigns_list' %}"><i class="fas fa-heartbeat"></i> Vital Signs</a></li>
+                <li><a href="{% url 'staffshift_list' %}"><i class="fas fa-clock"></i> My Shifts</a></li>
+                <li><a href="{% url 'visitor_list' %}"><i class="fas fa-users"></i> Visitors</a></li>
+                <li><a href="{% url 'trip_list' %}"><i class="fas fa-car"></i> Trips</a></li>
+                <li><a href="{% url 'medication_administration_list' %}"><i class="fas fa-pills"></i> Administer Meds</a></li>
+                <li><a href="{% url 'riskassessment_list' %}"><i class="fas fa-clipboard-check"></i> Risk Assessments</a></li>
+            </div>
+            {% endif %}
+            
+            <!-- CQC Member Links -->
+            {% if is_cqc %}
+            <div class="link-section">
+                <h4>CQC</h4>
+                <li><a href="{% url 'cqc_dashboard' %}"><i class="fas fa-clipboard-check"></i> CQC Dashboard</a></li>
+                <li><a href="{% url 'governancerecord_list' %}"><i class="fas fa-file-contract"></i> Governance Records</a></li>
+                <li><a href="{% url 'document_list' %}"><i class="fas fa-file"></i> Documents</a></li>
+                <li><a href="{% url 'report_incidents' %}"><i class="fas fa-chart-bar"></i> Incident Reports</a></li>
+                <li><a href="{% url 'report_medication' %}"><i class="fas fa-pills"></i> Medication Reports</a></li>
+            </div>
+            {% endif %}
+            
+            <!-- Report Links (Available to Admin, Management and CQC) -->
+            {% if request.user.is_superuser or is_management or is_cqc %}
+            <div class="link-section">
+                <h4>Reports</h4>
+                <li><a href="{% url 'report_daily_activities' %}"><i class="fas fa-file-alt"></i> Daily Activities</a></li>
+                <li><a href="{% url 'report_medication' %}"><i class="fas fa-pills"></i> Medication</a></li>
+                <li><a href="{% url 'report_incidents' %}"><i class="fas fa-exclamation-triangle"></i> Incidents</a></li>
+                <li><a href="{% url 'report_staff_shifts' %}"><i class="fas fa-user-clock"></i> Staff Shifts</a></li>
+            </div>
+            {% endif %}
+
+            <!-- Admin User Links -->
+            {% if request.user.is_superuser %}
+            <div class="link-section">
+                <h4>Administration</h4>
+                <li><a href="/admin/"><i class="fas fa-cog"></i> Admin Panel</a></li>
+                <li><a href="{% url 'staff_member_list' %}"><i class="fas fa-user-tie"></i> Staff Management</a></li>
+                <li><a href="{% url 'department_list' %}"><i class="fas fa-building"></i> Departments</a></li>
+                <li><a href="{% url 'systemsetting_list' %}"><i class="fas fa-sliders-h"></i> System Settings</a></li>
+                <li><a href="{% url 'security_dashboard' %}"><i class="fas fa-shield-alt"></i> Security Dashboard</a></li>
+            </div>
+            {% endif %}
+            <br>
+            <li>
+                <a href="#" onclick="document.getElementById('logout-form').submit(); return false;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav" id="mobileNav">
+        <div class="mobile-nav-header">
+            <div class="logo">
+                <i class="fas fa-heartbeat"></i>
+                <h1>Ci-Wellbeing</h1>
+            </div>
+            <button class="close-menu" id="closeMenu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <ul>
+            <li><a href="{% url 'dashboard' %}" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-th-large"></i> Dashboard</a></li>
+            
+            {% if request.user.is_superuser or is_management or is_staff %}
+            <li><a href="{% url 'serviceuser_list' %}" class="{% if 'serviceuser' in request.path %}active{% endif %}"><i class="fas fa-users"></i> Service Users</a></li>
+            <li><a href="{% url 'activity_list' %}" class="{% if 'activity' in request.path %}active{% endif %}"><i class="fas fa-walking"></i> Activities</a></li>
+            <li><a href="{% url 'incident_list' %}" class="{% if 'incident' in request.path %}active{% endif %}"><i class="fas fa-exclamation-circle"></i> Incidents</a></li>
+            <li><a href="{% url 'staffhandover_list' %}" class="{% if 'staffhandover_list' in request.path %}active{% endif %}"><i class="fas fa-calendar-check"></i> Handover</a></li>
+            <li><a href="{% url 'medication_administration_list' %}" class="{% if 'medication' in request.path %}active{% endif %}"><i class="fas fa-pills"></i> Medications</a></li>
+            {% endif %}
+            
+            {% if request.user.is_superuser or is_management or is_staff %}
+            <li><a href="{% url 'dailysummary_list' %}" class="{% if 'dailysummary' in request.path %}active{% endif %}"><i class="fas fa-clipboard-list"></i> Daily Summary</a></li>
+            {% endif %}
+            
+            {% if request.user.is_superuser or is_management %}
+            <li><a href="{% url 'staff_member_list' %}" class="{% if 'staffmember' in request.path %}active{% endif %}"><i class="fas fa-user-tie"></i> Staff</a></li>
+            {% endif %}
+            
+            {% if request.user.is_superuser or is_management %}
+            <li><a href="{% url 'managementdailynote_list' %}" class="{% if 'management' in request.path %}active{% endif %}"><i class="fas fa-chart-line"></i> Management</a></li>
+            {% endif %}
+            
+            {% if is_cqc %}
+            <li><a href="{% url 'governancerecord_list' %}" class="{% if 'governance' in request.path %}active{% endif %}"><i class="fas fa-file-contract"></i> Governance</a></li>
+            {% endif %}
+            
+            <li><a href="#"><i class="fas fa-user-circle"></i> Profile</a></li>
+            <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <script>
+        // Mobile menu functionality
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeMenu = document.getElementById('closeMenu');
+        const mobileNav = document.getElementById('mobileNav');
+        const overlay = document.getElementById('overlay');
+        
+        // Profile sidebar functionality
+        const userProfileBtn = document.getElementById('userProfileBtn');
+        const profileSidebar = document.getElementById('profileSidebar');
+        const closeSidebar = document.getElementById('closeSidebar');
+
+        function openMobileMenu() {
+            mobileNav.classList.add('open');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMobileMenu() {
+            mobileNav.classList.remove('open');
+            overlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function openProfileSidebar() {
+            profileSidebar.classList.add('open');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeProfileSidebar() {
+            profileSidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        mobileMenuBtn.addEventListener('click', openMobileMenu);
+        closeMenu.addEventListener('click', closeMobileMenu);
+        userProfileBtn.addEventListener('click', openProfileSidebar);
+        closeSidebar.addEventListener('click', closeProfileSidebar);
+        overlay.addEventListener('click', function() {
+            closeMobileMenu();
+            closeProfileSidebar();
+        });
+
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                    alert.style.display = 'none';
+                }, 300);
+            });
+        }, 5000);
+    </script>
+    
+    {% block extra_js %}
+    {% endblock %}
+</body>
+</html>

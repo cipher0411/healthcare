@@ -1,0 +1,86 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">
+        <i class="fas fa-{% if object %}edit{% else %}plus{% endif %}"></i>
+        {% if object %}Edit{% else %}Create{% endif %} Management Handover
+    </h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'managementhandover_list' %}'">
+            <i class="fas fa-arrow-left"></i> Cancel
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form.handed_over_by|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.handed_over_to|as_crispy_field }}
+                </div>
+            </div>
+            
+            {{ form.handover_date|as_crispy_field }}
+            {{ form.notes|as_crispy_field }}
+            {{ form.urgent_matters|as_crispy_field }}
+            {{ form.follow_up_required|as_crispy_field }}
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {% if object %}Update{% else %}Create{% endif %} Handover
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="location.href='{% url 'managementhandover_list' %}'">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .form-actions {
+        text-align: center;
+    }
+    
+    .form-actions .btn {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date to today if not set
+    const dateField = document.getElementById('id_handover_date');
+    if (!dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
+    }
+    
+    // Set current user as handed_over_by if not set
+    const handedOverByField = document.getElementById('id_handed_over_by');
+    if (!handedOverByField.value) {
+        // This would typically be set in the view, but we can set a default here
+        // You might want to implement this based on your user authentication
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="page-title">
+                <i class="fas fa-user-clock"></i> Staff Shift Details
+            </h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">Shift Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Shift Date:</strong> {{ staff_shift.shift_date|date:"M d, Y" }}</p>
+                            <p><strong>Shift Type:</strong> {{ staff_shift.get_shift_type_display }}</p>
+                            <p><strong>Start Time:</strong> {{ staff_shift.start_time }}</p>
+                            <p><strong>End Time:</strong> {{ staff_shift.end_time }}</p>
+                            <p>
+                                <strong>Completed:</strong>
+                                <span class="badge badge-{% if staff_shift.is_completed %}success{% else %}warning{% endif %}">
+                                    {{ staff_shift.is_completed|yesno:"Yes,No" }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Staff Member:</strong> {{ staff_shift.staff_member.user.get_full_name }}</p>
+                            <p><strong>Phone:</strong> {{ staff_shift.staff_member.phone_number|default:"N/A" }}</p>
+                            <p><strong>Email:</strong> {{ staff_shift.staff_member.user.email }}</p>
+                            <p><strong>Created:</strong> {{ staff_shift.created_at|date:"M d, Y H:i" }}</p>
+                            <p><strong>Updated:</strong> {{ staff_shift.updated_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+
+                    {% if staff_shift.notes %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Notes:</strong></p>
+                            <div class="border rounded p-3 bg-light">
+                                {{ staff_shift.notes|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if user.is_staff or user.profile.role == 'management' %}
+                        <a href="{% url 'staffshift_update' staff_shift.pk %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit Shift
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'staffshift_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Shift Metadata</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Created by:</strong> {{ staff_shift.created_by.get_full_name }}</p>
+                    <p><strong>Last updated by:</strong> {{ staff_shift.updated_by.get_full_name }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        padding: 1rem 1.5rem;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .badge {
+        font-size: 0.85em;
+        padding: 0.4em 0.6em;
+    }
+
+    .bg-light {
+        background-color: #f9f9f9;
+    }
+
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}

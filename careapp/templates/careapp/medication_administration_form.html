@@ -1,0 +1,190 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header py-3" style="background-color: #A8CBB7;">
+                    <h5 class="m-0 font-weight-bold text-white">Medication Administration</h5>
+                </div>
+                <div class="card-body">
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Please correct the errors below:</strong>
+                        <ul>
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" id="medication-form">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.medication|as_crispy_field }}
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        {{ form.administered_date|as_crispy_field }}
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        {{ form.administered_time|as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    {{ form.dose_administered|as_crispy_field }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.status|as_crispy_field }}
+                                </div>
+                                <div id="refusal-reason-section" style="display: none;">
+                                    <div class="form-group">
+                                        {{ form.refusal_reason|as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    {{ form.witness|as_crispy_field }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.witness_password|as_crispy_field }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.notes|as_crispy_field }}
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary">Record Administration</button>
+                                    <a href="{% url 'medication_administration_list' %}" class="btn btn-secondary">Cancel</a>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Medication Details Panel -->
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h6>Medication Details</h6>
+                                    </div>
+                                    <div class="card-body" id="medication-details">
+                                        <p class="text-muted">Select a medication to view details</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Service User Information -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6>Service User Information</h6>
+                                    </div>
+                                    <div class="card-body" id="service-user-details">
+                                        <p class="text-muted">Select a medication to view service user details</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get references to form elements
+    const medicationSelect = document.getElementById('id_medication');
+    const statusSelect = document.getElementById('id_status');
+    const refusalSection = document.getElementById('refusal-reason-section');
+    const witnessField = document.getElementById('id_witness');
+    const witnessPasswordField = document.getElementById('id_witness_password');
+    
+    // Toggle refusal reason based on status
+    if (statusSelect && refusalSection) {
+        statusSelect.addEventListener('change', function() {
+            refusalSection.style.display = this.value === 'refused' ? 'block' : 'none';
+        });
+        
+        // Initial state
+        refusalSection.style.display = statusSelect.value === 'refused' ? 'block' : 'none';
+    }
+    
+    // Load medication details when medication is selected
+    if (medicationSelect) {
+        medicationSelect.addEventListener('change', function() {
+            const medicationId = this.value;
+            if (medicationId) {
+                fetch(`/api/medication/${medicationId}/details/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update medication details
+                        document.getElementById('medication-details').innerHTML = `
+                            <h6>${data.name}</h6>
+                            <p><strong>Type:</strong> ${data.medication_type_display}</p>
+                            <p><strong>Dosage:</strong> ${data.dosage}</p>
+                            <p><strong>Frequency:</strong> ${data.frequency}</p>
+                            <p><strong>Route:</strong> ${data.route || 'Not specified'}</p>
+                            <p><strong>Instructions:</strong> ${data.instructions || 'None'}</p>
+                            <p><strong>Current Balance:</strong> ${data.current_balance} units</p>
+                            <p><strong>Controlled Drug:</strong> ${data.is_controlled_drug ? 'Yes' : 'No'}</p>
+                        `;
+                        
+                        // Update service user details
+                        document.getElementById('service-user-details').innerHTML = `
+                            <h6>${data.service_user_name}</h6>
+                            <p><strong>Room:</strong> ${data.service_user_room}</p>
+                            <p><strong>Allergies:</strong> ${data.service_user_allergies || 'None'}</p>
+                            <p><strong>Conditions:</strong> ${data.service_user_conditions || 'None'}</p>
+                        `;
+                        
+                        // Toggle witness requirements based on controlled drug status
+                        if (data.is_controlled_drug) {
+                            witnessField.required = true;
+                            witnessPasswordField.required = true;
+                            document.querySelector('label[for="id_witness"]').innerHTML += ' <span class="text-danger">*</span>';
+                            document.querySelector('label[for="id_witness_password"]').innerHTML += ' <span class="text-danger">*</span>';
+                        } else {
+                            witnessField.required = false;
+                            witnessPasswordField.required = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching medication details:', error);
+                    });
+            } else {
+                document.getElementById('medication-details').innerHTML = '<p class="text-muted">Select a medication to view details</p>';
+                document.getElementById('service-user-details').innerHTML = '<p class="text-muted">Select a medication to view service user details</p>';
+            }
+        });
+        
+        // Trigger change event if medication is pre-selected
+        if (medicationSelect.value) {
+            medicationSelect.dispatchEvent(new Event('change'));
+        }
+    }
+    
+    // Set current date and time if fields are empty
+    const dateField = document.getElementById('id_administered_date');
+    const timeField = document.getElementById('id_administered_time');
+    
+    if (dateField && !dateField.value) {
+        const now = new Date();
+        dateField.value = now.toISOString().split('T')[0];
+    }
+    
+    if (timeField && !timeField.value) {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        timeField.value = `${hours}:${minutes}`;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-user-friends"></i> Visitor Details</h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'visitor_list' %}'">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </button>
+        {% if user.is_staff or user.profile.role == 'management' %}
+        <button class="btn btn-primary" onclick="location.href='{% url 'visitor_update' visitor.pk %}'">
+            <i class="fas fa-edit"></i> Edit Visitor
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Visitor Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label class="font-weight-bold">Visitor Name:</label>
+                            <p>{{ visitor.visitor_name }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label class="font-weight-bold">Phone Number:</label>
+                            <p>{% if visitor.phone_number %}{{ visitor.phone_number }}{% else %}<span class="text-muted">Not provided</span>{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label class="font-weight-bold">Relationship:</label>
+                            <p>{{ visitor.relationship }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-item">
+                            <label class="font-weight-bold">COVID Screening:</label>
+                            <p>
+                                <span class="badge {% if visitor.covid_screening_passed %}badge-success{% else %}badge-danger{% endif %}">
+                                    {% if visitor.covid_screening_passed %}Passed{% else %}Failed{% endif %}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-item">
+                    <label class="font-weight-bold">Service User:</label>
+                    <div class="user-info mt-2">
+                        {% if visitor.service_user.photo %}
+                        <img src="{{ visitor.service_user.photo.url }}" alt="{{ visitor.service_user.first_name }} {{ visitor.service_user.last_name }}" class="user-avatar-md">
+                        {% else %}
+                        <div class="avatar-placeholder-md">
+                            {{ visitor.service_user.first_name|first }}{{ visitor.service_user.last_name|first }}
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-0">{{ visitor.service_user.first_name }} {{ visitor.service_user.last_name }}</h6>
+                            <small class="text-muted">Date of Birth: {{ visitor.service_user.date_of_birth|date:"M d, Y" }}</small>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if visitor.notes %}
+                <div class="detail-item">
+                    <label class="font-weight-bold">Notes:</label>
+                    <p class="bg-light p-3 rounded">{{ visitor.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Visit Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="detail-item">
+                    <label class="font-weight-bold">Visit Date:</label>
+                    <p>{{ visitor.visit_date|date:"M d, Y" }}</p>
+                </div>
+                
+                <div class="detail-item">
+                    <label class="font-weight-bold">Arrival Time:</label>
+                    <p>{{ visitor.arrival_time }}</p>
+                </div>
+                
+                {% if visitor.departure_time %}
+                <div class="detail-item">
+                    <label class="font-weight-bold">Departure Time:</label>
+                    <p>{{ visitor.departure_time }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="detail-item">
+                    <label class="font-weight-bold">Visit Duration:</label>
+                    <p>
+                        {% if visitor.departure_time %}
+                            {% with duration=visitor.get_visit_duration %}
+                                {{ duration.hours }}h {{ duration.minutes }}m
+                            {% endwith %}
+                        {% else %}
+                            <span class="text-muted">Not departed yet</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title">Audit Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="detail-item">
+                    <label class="font-weight-bold">Created:</label>
+                    <p>{{ visitor.created_at|date:"M d, Y H:i" }} by {{ visitor.created_by.get_full_name|default:visitor.created_by.username }}</p>
+                </div>
+                
+                <div class="detail-item">
+                    <label class="font-weight-bold">Last Updated:</label>
+                    <p>{{ visitor.updated_at|date:"M d, Y H:i" }} by {{ visitor.updated_by.get_full_name|default:visitor.updated_by.username }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar-md, .avatar-placeholder-md {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-md {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.detail-item {
+    margin-bottom: 1.5rem;
+}
+
+.detail-item label {
+    color: var(--secondary-color);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-success { background: #28a745; color: white; }
+.badge-danger { background: #dc3545; color: white; }
+
+@media (max-width: 768px) {
+    .user-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+</style>
+{% endblock %}

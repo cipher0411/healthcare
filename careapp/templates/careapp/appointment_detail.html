@@ -1,0 +1,256 @@
+<!-- careapp/templates/careapp/appointment_detail.html -->
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-calendar-check"></i> Appointment Details</h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'appointment_list' %}'">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </button>
+        {% if user.is_staff or user.profile.role == 'management' %}
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'appointment_update' appointment.pk %}'">
+            <i class="fas fa-edit"></i> Edit
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">{{ appointment.title }}</h4>
+                <span class="badge {% if appointment.is_completed %}badge-success{% else %}badge-warning{% endif %}">
+                    {% if appointment.is_completed %}Completed{% else %}Upcoming{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                {% if appointment.description %}
+                <div class="mb-4">
+                    <h5>Description</h5>
+                    <p class="text-muted">{{ appointment.description }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Appointment Details</h5>
+                        <div class="detail-item">
+                            <i class="fas fa-calendar-alt mr-2"></i>
+                            <strong>Date:</strong> {{ appointment.date|date:"M d, Y" }}
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-clock mr-2"></i>
+                            <strong>Time:</strong> {{ appointment.start_time }}{% if appointment.end_time %} - {{ appointment.end_time }}{% endif %}
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-tag mr-2"></i>
+                            <strong>Type:</strong> {{ appointment.get_appointment_type_display }}
+                        </div>
+                        <div class="detail-item">
+                            <i class="fas fa-map-marker-alt mr-2"></i>
+                            <strong>Location:</strong> {{ appointment.location }}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Service User</h5>
+                        <div class="user-info mb-3">
+                            {% if appointment.service_user.photo %}
+                            <img src="{{ appointment.service_user.photo.url }}" alt="{{ appointment.service_user.first_name }} {{ appointment.service_user.last_name }}" class="user-avatar-large mr-3">
+                            {% else %}
+                            <div class="avatar-placeholder-large mr-3">
+                                {{ appointment.service_user.first_name|first }}{{ appointment.service_user.last_name|first }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <strong>{{ appointment.service_user.first_name }} {{ appointment.service_user.last_name }}</strong>
+                                <br>
+                                <span class="text-muted">Room: {{ appointment.service_user.room_number }}</span>
+                            </div>
+                        </div>
+                        
+                        <h5>Staff Accompanying</h5>
+                        {% if appointment.staff_accompanying.all %}
+                        <div class="staff-list">
+                            {% for staff in appointment.staff_accompanying.all %}
+                            <div class="staff-item mb-2">
+                                <div class="user-info">
+                                    <div class="avatar-placeholder-sm mr-2">
+                                        {{ staff.user.first_name|first }}{{ staff.user.last_name|first }}
+                                    </div>
+                                    <span>{{ staff.user.get_full_name }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No staff assigned</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Created by {{ appointment.created_by.get_full_name }} on {{ appointment.created_at|date:"M d, Y" }}
+                        {% if appointment.updated_by %}
+                        <br>Last updated by {{ appointment.updated_by.get_full_name }} on {{ appointment.updated_at|date:"M d, Y" }}
+                        {% endif %}
+                    </small>
+                    
+                    {% if user.is_staff or user.profile.role == 'management' %}
+                    {% if not appointment.is_completed %}
+                    <form method="post" action="{% url 'appointment_complete' appointment.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> Mark as Completed
+                        </button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'appointment_complete' appointment.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-undo"></i> Mark as Upcoming
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Appointment Notes</h5>
+            </div>
+            <div class="card-body">
+                {% if appointment.notes %}
+                <p>{{ appointment.notes }}</p>
+                {% else %}
+                <p class="text-muted">No notes available for this appointment.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title">Additional Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="detail-item">
+                    <i class="fas fa-phone mr-2"></i>
+                    <strong>Contact:</strong> 
+                    {% if appointment.contact_number %}
+                    {{ appointment.contact_number }}
+                    {% else %}
+                    <span class="text-muted">Not provided</span>
+                    {% endif %}
+                </div>
+                <div class="detail-item">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Status:</strong> 
+                    <span class="badge {% if appointment.is_completed %}badge-success{% else %}badge-warning{% endif %}">
+                        {% if appointment.is_completed %}Completed{% else %}Upcoming{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar-sm, .avatar-placeholder-sm {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-avatar-large, .avatar-placeholder-large {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-sm, .avatar-placeholder-large {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.avatar-placeholder-sm {
+    font-size: 12px;
+}
+
+.avatar-placeholder-large {
+    font-size: 1.5rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    color: #6c757d;
+}
+
+.detail-item i {
+    width: 16px;
+}
+
+.staff-list {
+    margin-top: 10px;
+}
+
+.staff-item {
+    padding: 5px;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-success { background: #28a745; color: white; }
+.badge-warning { background: #ffc107; color: black; }
+
+.card-title {
+    color: var(--secondary-color);
+}
+
+@media (max-width: 768px) {
+    .user-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 5px;
+    }
+    
+    .card-footer .d-flex {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .card-footer .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

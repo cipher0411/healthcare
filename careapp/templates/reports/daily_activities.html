@@ -1,0 +1,274 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load careapp_extras %}
+
+{% block title %}Daily Activities Report - Care Home Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-file-alt"></i> Daily Activities Report</h1>
+    <div>
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Report
+        </button>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Report Header -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Care Home Management System</h5>
+                <p class="mb-0">123 Care Home Lane</p>
+                <p class="mb-0">City, State 12345</p>
+                <p class="mb-0">Phone: (555) 123-4567</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <h5>Daily Activities Report</h5>
+                <p class="mb-0">Date: {% now "F j, Y" %}</p>
+                <p class="mb-0">Generated: {% now "g:i A" %}</p>
+                <p class="mb-0">By: {{ request.user.get_full_name }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white text-center">
+            <div class="card-body py-3">
+                <h6 class="card-title">Total Activities</h6>
+                <p class="card-text display-6">{{ activities.count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white text-center">
+            <div class="card-body py-3">
+                <h6 class="card-title">Meal Activities</h6>
+                <p class="card-text display-6">{{ meal_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white text-center">
+            <div class="card-body py-3">
+                <h6 class="card-title">Social Activities</h6>
+                <p class="card-text display-6">{{ social_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark text-center">
+            <div class="card-body py-3">
+                <h6 class="card-title">Therapy Sessions</h6>
+                <p class="card-text display-6">{{ therapy_count }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activities by Type -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Activities by Type</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <canvas id="activityTypeChart" width="400" height="200"></canvas>
+            </div>
+            <div class="col-md-6">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Activity Type</th>
+                                <th>Count</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for type, count in activity_types_count %}
+                            <tr>
+                                <td>{{ type }}</td>
+                                <td>{{ count }}</td>
+                                <td>{{ count|divisibleby:activities.count|floatformat:1 }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Activities List -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list"></i> Activity Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Service User</th>
+                        <th>Activity</th>
+                        <th>Type</th>
+                        <th>Staff</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in activities %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ activity.start_time|time:"H:i" }}</div>
+                            {% if activity.end_time %}
+                            <small class="text-muted">to {{ activity.end_time|time:"H:i" }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ activity.service_user.first_name }} {{ activity.service_user.last_name }}</strong>
+                            <div class="text-muted small">Room: {{ activity.service_user.room_number }}</div>
+                        </td>
+                        <td>
+                            {{ activity.title }}
+                            {% if activity.meal_type %}
+                            <div class="text-muted small">({{ activity.meal_type }})</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ activity.get_activity_type_display }}</span>
+                        </td>
+                        <td>
+                            {% for staff in activity.staff_involved.all %}
+                            <span class="badge bg-light text-dark">{{ staff.user.first_name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if activity.food_consumed %}
+                            <div class="text-muted small">
+                                <i class="fas fa-utensils"></i> {{ activity.food_consumed|truncatewords:5 }}
+                            </div>
+                            {% endif %}
+                            {% if activity.fluid_intake %}
+                            <div class="text-muted small">
+                                <i class="fas fa-tint"></i> {{ activity.fluid_intake }}ml
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <h5>No Activities Today</h5>
+                            <p class="text-muted">No activities were logged for today.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Report Footer -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <p class="mb-0 text-muted">
+                    Report generated on {% now "F j, Y \a\t g:i A" %} by {{ request.user.get_full_name }}
+                </p>
+                <p class="mb-0 text-muted">
+                    Care Home Management System • Confidential
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Activity Type Chart
+        const ctx = document.getElementById('activityTypeChart').getContext('2d');
+        const activityTypeChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    {% for type, count in activity_types_count %}
+                    '{{ type }}',
+                    {% endfor %}
+                ],
+                datasets: [{
+                    data: [
+                        {% for type, count in activity_types_count %}
+                        {{ count }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', 
+                        '#e74a3b', '#858796', '#f8f9fc', '#5a5c69'
+                    ],
+                    hoverBackgroundColor: [
+                        '#2e59d9', '#17a673', '#2c9faf', '#dda20a', 
+                        '#be2617', '#60616f', '#dde2f1', '#424347'
+                    ],
+                    hoverBorderColor: "rgba(234, 236, 244, 1)",
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Activities by Type'
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    @media print {
+        .btn, .navbar, .footer {
+            display: none !important;
+        }
+        
+        .card {
+            border: 1px solid #000 !important;
+            page-break-inside: avoid;
+        }
+        
+        .table-responsive {
+            overflow-x: visible !important;
+        }
+        
+        body {
+            padding: 20px;
+            font-size: 12px;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: #000 !important;
+        }
+    }
+</style>
+{% endblock %}

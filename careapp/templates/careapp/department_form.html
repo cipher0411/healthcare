@@ -1,0 +1,59 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">
+        <i class="fas fa-{% if object %}edit{% else %}plus{% endif %}"></i>
+        {% if object %}Edit{% else %}Create{% endif %} Department
+    </h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'department_list' %}'">
+            <i class="fas fa-arrow-left"></i> Cancel
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            {{ form.name|as_crispy_field }}
+            {{ form.description|as_crispy_field }}
+            {{ form.manager|as_crispy_field }}
+            {{ form.is_active|as_crispy_field }}
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {% if object %}Update{% else %}Create{% endif %} Department
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="location.href='{% url 'department_list' %}'">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .form-actions {
+        text-align: center;
+    }
+    
+    .form-actions .btn {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

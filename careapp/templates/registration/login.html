@@ -1,0 +1,343 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <i class="fas fa-sign-in-alt"></i>
+            <h2>Login to Ci-Wellbeing</h2>
+        </div>
+
+        <div class="login-body">
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>Error!</strong> Your username and password didn't match. Please try again.
+            </div>
+            {% endif %}
+
+            {% if next %}
+                {% if user.is_authenticated %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Your account doesn't have access to this page. Please login with an account that has access.
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Please login to access this page.
+                </div>
+                {% endif %}
+            {% endif %}
+
+            <form method="post" action="{% url 'login' %}" class="login-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_username" class="form-label">
+                        <i class="fas fa-user"></i> Username
+                    </label>
+                    <input type="text" name="username" autofocus autocapitalize="none" 
+                           autocomplete="username" maxlength="150" class="form-control" 
+                           required id="id_username" placeholder="Enter your username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_password" class="form-label">
+                        <i class="fas fa-lock"></i> Password
+                    </label>
+                    <div class="password-input-group">
+                        <input type="password" name="password" autocomplete="current-password" 
+                               class="form-control" required id="id_password" 
+                               placeholder="Enter your password">
+                        <button type="button" class="password-toggle" id="togglePassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="rememberMe" name="remember_me">
+                        <span class="checkmark"></span>
+                        Remember me
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                
+                <input type="hidden" name="next" value="{{ next }}">
+            </form>
+
+            <div class="login-footer">
+                <a href="#" id="forgotPasswordLink" class="forgot-password">
+                    <i class="fas fa-question-circle"></i> Forgot your password?
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal" id="forgotPasswordModal">
+    <div class="modal-content">
+        <button class="close-modal" id="closeForgotPasswordModal">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 class="modal-title">Reset Password</h2>
+        
+        <div class="modal-body">
+            <p>Please contact the system administrator to reset your password.</p>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                For security reasons, password resets must be handled by management.
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="closeModalBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 70vh;
+        padding: 2rem;
+    }
+
+    .login-card {
+        background: var(--white);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        width: 100%;
+        max-width: 400px;
+        overflow: hidden;
+    }
+
+    .login-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .login-header i {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .login-header h2 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .login-body {
+        padding: 2rem;
+    }
+
+    .login-form {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-color);
+    }
+
+    .form-label i {
+        margin-right: 0.5rem;
+        color: var(--primary-color);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(168, 203, 183, 0.1);
+    }
+
+    .password-input-group {
+        position: relative;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 4px;
+        transition: var(--transition);
+    }
+
+    .password-toggle:hover {
+        color: var(--primary-color);
+        background: #f1f1f1;
+    }
+
+    .form-options {
+        margin-bottom: 1.5rem;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .checkbox-label input {
+        margin-right: 0.5rem;
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .login-footer {
+        text-align: center;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+    }
+
+    .forgot-password {
+        color: var(--secondary-color);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: var(--transition);
+    }
+
+    .forgot-password:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+
+    /* Alert styles */
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .alert-danger {
+        background-color: #fee;
+        border: 1px solid #fcc;
+        color: #c33;
+    }
+
+    .alert-warning {
+        background-color: #ffd;
+        border: 1px solid #ffc;
+        color: #963;
+    }
+
+    .alert-info {
+        background-color: #e9f5ff;
+        border: 1px solid #b3d9ff;
+        color: #0066cc;
+    }
+
+    /* Modal specific styles */
+    .modal-body {
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-footer {
+        text-align: right;
+    }
+
+    @media (max-width: 480px) {
+        .login-container {
+            padding: 1rem;
+        }
+        
+        .login-card {
+            margin: 1rem;
+        }
+        
+        .login-header,
+        .login-body {
+            padding: 1.5rem;
+        }
+    }
+</style>
+
+<script>
+    // Toggle password visibility
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const passwordInput = document.getElementById('id_password');
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Toggle eye icon
+        const icon = this.querySelector('i');
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+    });
+
+    // Auto-focus on username field
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('id_username').focus();
+    });
+
+    // Forgot password modal functionality
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+    const closeForgotPasswordModal = document.getElementById('closeForgotPasswordModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+
+    forgotPasswordLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        forgotPasswordModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+
+    [closeForgotPasswordModal, closeModalBtn].forEach(btn => {
+        btn.addEventListener('click', function() {
+            forgotPasswordModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(e) {
+        if (e.target === forgotPasswordModal) {
+            forgotPasswordModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    });
+</script>
+{% endblock %}

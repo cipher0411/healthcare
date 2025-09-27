@@ -1,0 +1,357 @@
+{% extends 'careapp/base.html' %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-shield-alt"></i> PBS Plans</h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-primary" onclick="location.href='{% url 'serviceuser_list' %}'">
+            <i class="fas fa-users"></i> Service Users
+        </button>
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'careplan_list' %}'">
+            <i class="fas fa-clipboard-list"></i> Care Plans
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4>PBS Plan Overview</h4>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-shield-alt"></i>
+                <h3>{{ total_count }}</h3>
+                <p>Total PBS Plans</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-check-circle"></i>
+                <h3>{{ active_count }}</h3>
+                <p>Active Plans</p>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>{{ due_for_review_count }}</h3>
+                <p>Due for Review</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        <!-- Filters -->
+        <div class="filters-section">
+            <h5>Filters</h5>
+            <form method="get" class="filter-form">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="service_user">Service User</label>
+                            <select name="service_user" id="service_user" class="form-control">
+                                <option value="">All Service Users</option>
+                                {% for user in service_users %}
+                                <option value="{{ user.id }}" {% if request.GET.service_user == user.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ user.first_name }} {{ user.last_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="is_active">Status</label>
+                            <select name="is_active" id="is_active" class="form-control">
+                                <option value="">All Status</option>
+                                <option value="true" {% if request.GET.is_active == 'true' %}selected{% endif %}>Active</option>
+                                <option value="false" {% if request.GET.is_active == 'false' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label for="review_status">Review Status</label>
+                            <select name="review_status" id="review_status" class="form-control">
+                                <option value="">All</option>
+                                <option value="due" {% if request.GET.review_status == 'due' %}selected{% endif %}>Due for Review</option>
+                                <option value="upcoming" {% if request.GET.review_status == 'upcoming' %}selected{% endif %}>Up to Date</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="search">Search</label>
+                            <input type="text" name="search" id="search" class="form-control" 
+                                   placeholder="Search by name or behaviors..." value="{{ request.GET.search }}">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div class="btn-group" style="display: block;">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> Apply
+                                </button>
+                                <a href="{% url 'pbsplan_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- PBS Plans Table -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Service User</th>
+                        <th>Last Review</th>
+                        <th>Next Review</th>
+                        <th>Status</th>
+                        <th>Review Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pbs_plan in pbs_plans %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm mr-3">
+                                    {% if pbs_plan.service_user.photo %}
+                                    <img src="{{ pbs_plan.service_user.photo.url }}" alt="{{ pbs_plan.service_user.first_name }}" class="avatar-img">
+                                    {% else %}
+                                    <div class="avatar-placeholder-sm">
+                                        {{ pbs_plan.service_user.first_name|first }}{{ pbs_plan.service_user.last_name|first }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <strong>{{ pbs_plan.service_user.first_name }} {{ pbs_plan.service_user.last_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">Room: {{ pbs_plan.service_user.room_number }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ pbs_plan.last_review_date|date:"M d, Y" }}</td>
+                        <td>
+                            {{ pbs_plan.next_review_date|date:"M d, Y" }}
+                            {% if pbs_plan.is_due_for_review %}
+                            <span class="badge badge-warning ml-1">Due</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if pbs_plan.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                                {% if pbs_plan.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if pbs_plan.is_due_for_review %}
+                            <span class="badge badge-warning">Due for Review</span>
+                            {% else %}
+                            <span class="badge badge-success">Up to Date</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ pbs_plan.created_at|date:"M d, Y" }}</small>
+                            <br>
+                            <small class="text-muted">by {{ pbs_plan.created_by.get_full_name }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'pbsplan_detail' pbs_plan.service_user.id %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                {% if is_management or is_staff %}
+                                <a href="{% url 'pbsplan_update' pbs_plan.service_user.id %}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'serviceuser_detail' pbs_plan.service_user.id %}" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-user"></i> Profile
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+                            <p>No PBS plans found.</p>
+                            {% if is_management or is_staff %}
+                            <a href="{% url 'serviceuser_list' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create PBS Plan
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="PBS plans pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-angle-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.stat-card i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.stat-card h3 {
+    font-size: 2rem;
+    margin: 0.5rem 0;
+    color: var(--secondary-color);
+}
+
+.stat-card p {
+    color: #6c757d;
+    margin: 0;
+}
+
+.filters-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.filters-section h5 {
+    margin-bottom: 1rem;
+    color: var(--secondary-color);
+}
+
+.filter-form .form-group {
+    margin-bottom: 0;
+}
+
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.table th {
+    background: #f8f9fa;
+    color: var(--secondary-color);
+    font-weight: 600;
+    border-top: none;
+}
+
+.btn-group .btn {
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-form .row > div {
+        margin-bottom: 1rem;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+        margin-bottom: 0.25rem;
+    }
+    
+    .btn-group .btn:last-child {
+        margin-bottom: 0;
+    }
+}
+</style>
+{% endblock %}

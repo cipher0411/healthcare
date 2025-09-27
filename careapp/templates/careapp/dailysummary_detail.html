@@ -1,0 +1,345 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-clipboard-list"></i> Daily Summary Details</h2>
+    <div class="header-actions">
+      {% if user.is_staff or user.profile.role == 'management' %}
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'dailysummary_update' dailysummary.pk %}'">
+            <i class="fas fa-edit"></i> Edit
+        </button>
+        {% endif %}
+        <button class="btn btn-outline-primary" onclick="location.href='{% url 'dailysummary_list' %}'">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </button>
+    </div>
+</div>
+
+<div class="summary-detail">
+    <div class="summary-header">
+        <div class="summary-main-info">
+            <h1>Daily Summary</h1>
+            <div class="summary-meta">
+                <span class="summary-date">{{ dailysummary.shift.shift_date|date:"M d, Y" }}</span>
+                <span class="summary-shift">{{ dailysummary.shift.get_shift_type_display }}</span>
+                <span class="summary-staff">{{ dailysummary.shift.staff_member.user.get_full_name }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary-content">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="summary-card">
+                    <h3><i class="fas fa-users"></i> Service Users Present</h3>
+                    <div class="service-users-list">
+                        {% if dailysummary.service_users_present.all %}
+                        <div class="row">
+                            {% for service_user in dailysummary.service_users_present.all %}
+                            <div class="col-md-6 mb-3">
+                                <div class="service-user-card">
+                                    <div class="user-info">
+                                        {% if service_user.photo %}
+                                        <img src="{{ service_user.photo.url }}" alt="{{ service_user.first_name }} {{ service_user.last_name }}" class="user-avatar-sm">
+                                        {% else %}
+                                        <div class="avatar-placeholder-sm">
+                                            {{ service_user.first_name|first }}{{ service_user.last_name|first }}
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ service_user.first_name }} {{ service_user.last_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">Room {{ service_user.room_number }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No service users recorded.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <h3><i class="fas fa-eye"></i> General Observations</h3>
+                    <div class="observations-content">
+                        <p>{{ dailysummary.general_observations|linebreaks }}</p>
+                    </div>
+                </div>
+                
+                {% if dailysummary.issues_concerns %}
+                <div class="summary-card">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Issues & Concerns</h3>
+                    <div class="issues-content">
+                        <p>{{ dailysummary.issues_concerns|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if dailysummary.positive_events %}
+                <div class="summary-card">
+                    <h3><i class="fas fa-smile"></i> Positive Events</h3>
+                    <div class="positive-content">
+                        <p>{{ dailysummary.positive_events|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <div class="summary-card">
+                    <h3><i class="fas fa-tasks"></i> Tasks</h3>
+                    <div class="tasks-section">
+                        <h4><i class="fas fa-check-circle text-success"></i> Completed Tasks</h4>
+                        <div class="tasks-content completed">
+                            <p>{{ dailysummary.tasks_completed|linebreaks }}</p>
+                        </div>
+                        
+                        {% if dailysummary.tasks_pending %}
+                        <h4><i class="fas fa-clock text-warning"></i> Pending Tasks</h4>
+                        <div class="tasks-content pending">
+                            <p>{{ dailysummary.tasks_pending|linebreaks }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if dailysummary.handover_notes %}
+                <div class="summary-card">
+                    <h3><i class="fas fa-exchange-alt"></i> Handover Notes</h3>
+                    <div class="handover-content">
+                        <p>{{ dailysummary.handover_notes|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="summary-card">
+                    <h3><i class="fas fa-history"></i> Summary Timeline</h3>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <strong>Created</strong>
+                                <p>by {{ dailysummary.created_by.get_full_name }}</p>
+                                <small>{{ dailysummary.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if dailysummary.updated_at != dailysummary.created_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <strong>Updated</strong>
+                                <p>by {{ dailysummary.updated_by.get_full_name }}</p>
+                                <small>{{ dailysummary.updated_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.summary-detail {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.summary-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.summary-main-info h1 {
+    margin-bottom: 15px;
+    color: var(--secondary-color);
+}
+
+.summary-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+
+.summary-meta span {
+    padding: 5px 12px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.summary-date {
+    background: var(--primary-color) !important;
+    color: white;
+}
+
+.summary-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.summary-card h3 {
+    margin-bottom: 20px;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.service-users-list {
+    margin-bottom: 20px;
+}
+
+.service-user-card {
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar-sm, .avatar-placeholder-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-sm {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.observations-content, .issues-content, .positive-content, .tasks-content, .handover-content {
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+}
+
+.tasks-section h4 {
+    margin: 20px 0 10px 0;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tasks-content.completed {
+    border-left: 4px solid #28a745;
+}
+
+.tasks-content.pending {
+    border-left: 4px solid #ffc107;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-point {
+    position: absolute;
+    left: -30px;
+    top: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: 4px solid white;
+}
+
+.timeline-content {
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.timeline-content small {
+    color: #6c757d;
+}
+
+@media (max-width: 768px) {
+    .summary-detail {
+        padding: 20px;
+    }
+    
+    .summary-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .service-user-card {
+        text-align: center;
+    }
+    
+    .user-info {
+        flex-direction: column;
+    }
+    
+    .timeline {
+        padding-left: 20px;
+    }
+    
+    .timeline::before {
+        left: 8px;
+    }
+    
+    .timeline-point {
+        left: -22px;
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .summary-main-info h1 {
+        font-size: 1.5rem;
+    }
+    
+    .summary-card {
+        padding: 15px;
+    }
+    
+    .summary-card h3 {
+        font-size: 1.2rem;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="page-title">
+                <i class="fas fa-bus"></i> Trip Details
+            </h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">Trip Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Destination:</strong> {{ trip.destination }}</p>
+                            <p><strong>Purpose:</strong> {{ trip.purpose }}</p>
+                            <p><strong>Date:</strong> {{ trip.date }}</p>
+                            <p><strong>Departure Time:</strong> {{ trip.departure_time }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Return Time:</strong> {{ trip.return_time|default:"Not specified" }}</p>
+                            <p><strong>Estimated Cost:</strong> £{{ trip.estimated_cost|default:"0.00" }}</p>
+                            <p><strong>Actual Cost:</strong> £{{ trip.actual_cost|default:"0.00" }}</p>
+                            <p><strong>Risk Assessment:</strong> 
+                                <span class="badge badge-{% if trip.risk_assessment_completed %}success{% else %}warning{% endif %}">
+                                    {{ trip.risk_assessment_completed|yesno:"Completed,Pending" }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if trip.notes %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Notes:</strong></p>
+                            <div class="border rounded p-3">
+                                {{ trip.notes|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if trip.risk_assessment_details %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Risk Assessment Details:</strong></p>
+                            <div class="border rounded p-3">
+                                {{ trip.risk_assessment_details|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">Participants</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Service Users:</h6>
+                    <ul class="list-group mb-3">
+                        {% for user in trip.service_users.all %}
+                        <li class="list-group-item">{{ user.first_name }} {{ user.last_name }}</li>
+                        {% empty %}
+                        <li class="list-group-item">No service users assigned</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <h6>Staff Accompanying:</h6>
+                    <ul class="list-group">
+                        {% for staff in trip.staff_accompanying.all %}
+                        <li class="list-group-item">{{ staff.user.get_full_name }}</li>
+                        {% empty %}
+                        <li class="list-group-item">No staff assigned</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'trip_update' trip.pk %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Edit Trip
+                        </a>
+                        <a href="{% url 'trip_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        padding: 1rem 1.5rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .list-group-item {
+        border: 1px solid rgba(0, 0, 0, 0.125);
+    }
+    
+    .badge {
+        font-size: 0.85em;
+        padding: 0.4em 0.6em;
+    }
+    
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}

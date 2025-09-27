@@ -1,0 +1,138 @@
+{% extends 'careapp/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title">
+                <i class="fas fa-clipboard-list"></i>
+                <h2>Care Plan - {{ care_plan.service_user.first_name }} {{ care_plan.service_user.last_name }}</h2>
+            </div>
+            
+            {% if is_management or is_staff %}
+            <div class="mb-3">
+                <a href="{% url 'careplan_update' care_plan.service_user.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Care Plan
+                </a>
+                <a href="{% url 'serviceuser_detail' care_plan.service_user.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Service User
+                </a>
+            </div>
+            {% endif %}
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>Care Plan Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <strong>Last Review Date:</strong> {{ care_plan.last_review_date }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Next Review Date:</strong> {{ care_plan.next_review_date }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6>Personal Care</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ care_plan.personal_care|linebreaks }}
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6>Mobility</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ care_plan.mobility|linebreaks }}
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6>Nutrition</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ care_plan.nutrition|linebreaks }}
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6>Hydration</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ care_plan.hydration|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6>Social Activities</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ care_plan.social_activities|linebreaks }}
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6>Medical Requirements</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ care_plan.medical_requirements|linebreaks }}
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6>Personal Goals</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ care_plan.personal_goals|linebreaks }}
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6>Spiritual & Cultural Needs</h6>
+                                </div>
+                                <div class="card-body">
+                                    <strong>Spiritual:</strong><br>
+                                    {{ care_plan.spiritual_needs|linebreaks }}
+                                    <strong>Cultural:</strong><br>
+                                    {{ care_plan.cultural_needs|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="alert alert-info">
+                                <strong>Status:</strong> 
+                                {% if care_plan.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Inactive</span>
+                                {% endif %}
+                                <br>
+                                <strong>Created:</strong> {{ care_plan.created_at }} by {{ care_plan.created_by.get_full_name }}<br>
+                                <strong>Last Updated:</strong> {{ care_plan.updated_at }} by {{ care_plan.updated_by.get_full_name }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

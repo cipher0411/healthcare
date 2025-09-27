@@ -1,0 +1,141 @@
+{% extends 'careapp/base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>Staff Member Details</h2>
+    </div>
+    <div class="col-md-6 text-right">
+        <a href="{% url 'staff_member_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                {% if staff_member.photo %}
+                <img src="{{ staff_member.photo.url }}" alt="{{ staff_member.user.get_full_name }}" class="img-fluid rounded-circle mb-3" style="max-width: 200px;">
+                {% else %}
+                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 200px; height: 200px;">
+                    <i class="fas fa-user fa-5x text-muted"></i>
+                </div>
+                {% endif %}
+                <h4>{{ staff_member.user.get_full_name }}</h4>
+                <p class="text-muted">{{ staff_member.position }}</p>
+                <p>
+                    <span class="badge badge-{% if staff_member.is_active %}success{% else %}danger{% endif %}">
+                        {% if staff_member.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Staff ID:</strong> {{ staff_member.staff_id }}</p>
+                        <p><strong>Username:</strong> {{ staff_member.user.username }}</p>
+                        <p><strong>Email:</strong> {{ staff_member.user.email }}</p>
+                        <p><strong>Phone:</strong> {{ staff_member.phone_number }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Department:</strong> {{ staff_member.department.name|default:"-" }}</p>
+                        <p><strong>Role:</strong> {{ staff_member.role.name|default:"-" }}</p>
+                        <p><strong>Start Date:</strong> {{ staff_member.start_date }}</p>
+                        {% if staff_member.end_date %}
+                        <p><strong>End Date:</strong> {{ staff_member.end_date }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if staff_member.qualifications %}
+                <hr>
+                <p><strong>Qualifications:</strong></p>
+                <p>{{ staff_member.qualifications }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Security Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        {% if staff_member.dbs_check_date %}
+                        <p><strong>DBS Check Date:</strong> {{ staff_member.dbs_check_date }}</p>
+                        {% endif %}
+                        {% if staff_member.dbs_check_reference %}
+                        <p><strong>DBS Reference:</strong> {{ staff_member.dbs_check_reference }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Emergency Contact</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> {{ staff_member.emergency_contact_name|default:"-" }}</p>
+                        <p><strong>Phone:</strong> {{ staff_member.emergency_contact_phone|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Relationship:</strong> {{ staff_member.emergency_contact_relationship|default:"-" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'staff_member_edit' staff_member.pk %}" class="btn btn-primary">
+        <i class="fas fa-edit"></i> Edit Staff Member
+    </a>
+    <a href="{% url 'staff_member_change_password' staff_member.pk %}" class="btn btn-warning">
+        <i class="fas fa-key"></i> Change Password
+    </a>
+    <form method="post" action="{% url 'staff_member_toggle_active' staff_member.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-{% if staff_member.is_active %}danger{% else %}success{% endif %}">
+            <i class="fas fa-{% if staff_member.is_active %}times{% else %}check{% endif %}"></i>
+            {% if staff_member.is_active %}Deactivate{% else %}Activate{% endif %} Account
+        </button>
+    </form>
+</div>
+
+<!-- Add this section to show group membership status -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>Group Membership</h5>
+    </div>
+    <div class="card-body">
+        <p>
+            <strong>Staff Group:</strong> 
+            {% if is_in_staff_group %}
+            <span class="badge badge-success">Member</span>
+            {% else %}
+            <span class="badge badge-danger">Not a Member</span>
+            <a href="{% url 'staff_member_add_to_group' staff_member.pk %}" class="btn btn-sm btn-primary ml-2">
+                <i class="fas fa-users"></i> Add to Staff Group
+            </a>
+            {% endif %}
+        </p>
+        <p class="text-muted">Staff group membership grants access to the staff portal and appropriate permissions.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,474 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-exclamation-triangle"></i> Risk Assessments</h2>
+    <div class="header-actions">
+        <a href="{% url 'riskassessment_create' user.pk %}" class="btn btn-primary btn-block mb-2">
+    <i class="fas fa-plus"></i> Create Risk Assessment for {{ user.first_name }}
+</a>
+
+        <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#filterModal">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+        <div class="view-toggle btn-group ml-2">
+            <button class="btn btn-outline-secondary {% if request.GET.view != 'table' %}active{% endif %}" id="cardViewBtn" onclick="toggleView('cards')">
+                <i class="fas fa-th-large"></i> Cards
+            </button>
+            <button class="btn btn-outline-secondary {% if request.GET.view == 'table' %}active{% endif %}" id="tableViewBtn" onclick="toggleView('table')">
+                <i class="fas fa-table"></i> Table
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Card View -->
+<div id="cardView" class="{% if request.GET.view == 'table' %}d-none{% endif %}">
+    <div class="row" id="riskAssessmentCards">
+        {% for assessment in risk_assessments %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card risk-assessment-card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">{{ assessment.category }}</h5>
+                        <span class="badge badge-{% if assessment.risk_level == 'low' %}success{% elif assessment.risk_level == 'medium' %}warning{% else %}danger{% endif %}">
+                            {{ assessment.get_risk_level_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="assessment-details">
+                        <div class="detail-item">
+                            <i class="fas fa-user mr-2"></i>
+                            <div class="user-info">
+                                {% if assessment.service_user.photo %}
+                                <img src="{{ assessment.service_user.photo.url }}" alt="{{ assessment.service_user.first_name }} {{ assessment.service_user.last_name }}" class="user-avatar-sm mr-2">
+                                {% else %}
+                                <div class="avatar-placeholder-sm mr-2">
+                                    {{ assessment.service_user.first_name|first }}{{ assessment.service_user.last_name|first }}
+                                </div>
+                                {% endif %}
+                                <span>{{ assessment.service_user.first_name }} {{ assessment.service_user.last_name }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <i class="fas fa-calendar-alt mr-2"></i>
+                            <span>Assessed: {{ assessment.date_assessed|date:"M d, Y" }}</span>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <i class="fas fa-calendar-check mr-2"></i>
+                            <span>Review: {{ assessment.review_date|date:"M d, Y" }}</span>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <i class="fas fa-circle mr-2" style="color: {% if assessment.is_active %}#28a745{% else %}#6c757d{% endif %}"></i>
+                            <span>Status: {{ assessment.is_active|yesno:"Active,Inactive" }}</span>
+                        </div>
+                        
+                        {% if assessment.description %}
+                        <div class="detail-item">
+                            <i class="fas fa-sticky-note mr-2"></i>
+                            <span>{{ assessment.description|truncatewords:10 }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-sm btn-outline-primary" onclick="location.href='{% url 'riskassessment_detail' assessment.pk %}'">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        {% if user.is_staff or user.profile.role == 'management' %}
+                        <button class="btn btn-sm btn-outline-secondary" onclick="location.href='{% url 'riskassessment_update' assessment.pk %}'">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle"></i> No risk assessments found.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Table View -->
+<div id="tableView" class="{% if request.GET.view != 'table' %}d-none{% endif %}">
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Service User</th>
+                            <th>Risk Level</th>
+                            <th>Date Assessed</th>
+                            <th>Review Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assessment in risk_assessments %}
+                        <tr>
+                            <td>
+                                <strong>{{ assessment.category }}</strong>
+                                {% if assessment.description %}
+                                <p class="text-muted small mb-0">{{ assessment.description|truncatewords:5 }}</p>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="user-info">
+                                    {% if assessment.service_user.photo %}
+                                    <img src="{{ assessment.service_user.photo.url }}" alt="{{ assessment.service_user.first_name }} {{ assessment.service_user.last_name }}" class="user-avatar-sm">
+                                    {% else %}
+                                    <div class="avatar-placeholder-sm">
+                                        {{ assessment.service_user.first_name|first }}{{ assessment.service_user.last_name|first }}
+                                    </div>
+                                    {% endif %}
+                                    <span>{{ assessment.service_user.first_name }} {{ assessment.service_user.last_name }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-{% if assessment.risk_level == 'low' %}success{% elif assessment.risk_level == 'medium' %}warning{% else %}danger{% endif %}">
+                                    {{ assessment.get_risk_level_display }}
+                                </span>
+                            </td>
+                            <td>{{ assessment.date_assessed|date:"M d, Y" }}</td>
+                            <td>{{ assessment.review_date|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="badge badge-{% if assessment.is_active %}success{% else %}secondary{% endif %}">
+                                    {{ assessment.is_active|yesno:"Active,Inactive" }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="location.href='{% url 'riskassessment_detail' assessment.pk %}'">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% if user.is_staff or user.profile.role == 'management' %}
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="location.href='{% url 'riskassessment_update' assessment.pk %}'">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No risk assessments found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+        {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Enhanced Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Filter Risk Assessments</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="get" id="filterForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="service_user">Service User</label>
+                                <select class="form-control" id="service_user" name="service_user">
+                                    <option value="">All Service Users</option>
+                                    {% for user in service_users %}
+                                    <option value="{{ user.id }}" {% if request.GET.service_user == user.id|stringformat:"s" %}selected{% endif %}>{{ user.first_name }} {{ user.last_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="risk_level">Risk Level</label>
+                                <select class="form-control" id="risk_level" name="risk_level">
+                                    <option value="">All Risk Levels</option>
+                                    <option value="low" {% if request.GET.risk_level == "low" %}selected{% endif %}>Low</option>
+                                    <option value="medium" {% if request.GET.risk_level == "medium" %}selected{% endif %}>Medium</option>
+                                    <option value="high" {% if request.GET.risk_level == "high" %}selected{% endif %}>High</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_from">Date Assessed From</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.GET.date_from }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_to">Date Assessed To</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.GET.date_to }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="review_date_from">Review Date From</label>
+                                <input type="date" class="form-control" id="review_date_from" name="review_date_from" value="{{ request.GET.review_date_from }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="review_date_to">Review Date To</label>
+                                <input type="date" class="form-control" id="review_date_to" name="review_date_to" value="{{ request.GET.review_date_to }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="is_active">Status</label>
+                                <select class="form-control" id="is_active" name="is_active">
+                                    <option value="">All Statuses</option>
+                                    <option value="true" {% if request.GET.is_active == "true" %}selected{% endif %}>Active</option>
+                                    <option value="false" {% if request.GET.is_active == "false" %}selected{% endif %}>Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="search">Search</label>
+                                <input type="text" class="form-control" id="search" name="search" value="{{ request.GET.search }}" placeholder="Search by category or description">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="view" id="viewType" value="{{ request.GET.view|default:'cards' }}">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">Clear All Filters</button>
+                <button type="button" class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar-sm, .avatar-placeholder-sm {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-sm {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.risk-assessment-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid rgba(0,0,0,0.125);
+    border-radius: 0.5rem;
+}
+
+.risk-assessment-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.assessment-details {
+    margin-top: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    color: #6c757d;
+}
+
+.detail-item i {
+    width: 16px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.btn-group .btn {
+    margin-right: 5px;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-success { background: #28a745; color: white; }
+.badge-warning { background: #ffc107; color: black; }
+.badge-danger { background: #dc3545; color: white; }
+.badge-secondary { background: #6c757d; color: white; }
+
+.view-toggle .btn.active {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.card-title {
+    color: var(--secondary-color);
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .user-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 5px;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .view-toggle {
+        align-self: flex-start;
+    }
+    
+    .risk-assessment-card .card-footer .d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .risk-assessment-card .card-footer .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap components
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Set active state for view buttons
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view');
+    if (view === 'table') {
+        document.getElementById('cardViewBtn').classList.remove('active');
+        document.getElementById('tableViewBtn').classList.add('active');
+    } else {
+        document.getElementById('cardViewBtn').classList.add('active');
+        document.getElementById('tableViewBtn').classList.remove('active');
+    }
+    
+    // Set the view type in the filter form
+    document.getElementById('viewType').value = view || 'cards';
+});
+
+function toggleView(viewType) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('view', viewType);
+    
+    // Preserve other filter parameters
+    {% for key, value in request.GET.items %}
+    {% if key != 'view' and key != 'page' %}
+    urlParams.set('{{ key }}', '{{ value }}');
+    {% endif %}
+    {% endfor %}
+    
+    window.location.href = '?' + urlParams.toString();
+}
+
+function applyFilters() {
+    // Get the current view type
+    const viewType = document.getElementById('viewType').value;
+    
+    // Submit the form
+    document.getElementById('filterForm').submit();
+}
+
+function clearFilters() {
+    // Redirect to the list page with only the view parameter
+    const urlParams = new URLSearchParams();
+    urlParams.set('view', document.getElementById('viewType').value);
+    window.location.href = '?' + urlParams.toString();
+}
+</script>
+{% endblock %}

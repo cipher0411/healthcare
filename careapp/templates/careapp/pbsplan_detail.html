@@ -1,0 +1,112 @@
+{% extends 'careapp/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title">
+                <i class="fas fa-shield-alt"></i>
+                <h2>PBS Plan - {{ pbs_plan.service_user.first_name }} {{ pbs_plan.service_user.last_name }}</h2>
+            </div>
+            
+            {% if is_management or is_staff %}
+            <div class="mb-3">
+                <a href="{% url 'pbsplan_update' pbs_plan.service_user.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit PBS Plan
+                </a>
+                <a href="{% url 'serviceuser_detail' pbs_plan.service_user.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Service User
+                </a>
+            </div>
+            {% endif %}
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>Positive Behavior Support Plan Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <strong>Last Review Date:</strong> {{ pbs_plan.last_review_date }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Next Review Date:</strong> {{ pbs_plan.next_review_date }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6>Behaviors of Concern</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ pbs_plan.behaviors_of_concern|linebreaks }}
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6>Triggers</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ pbs_plan.triggers|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header bg-success text-white">
+                                    <h6>Prevention Strategies</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ pbs_plan.prevention_strategies|linebreaks }}
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6>De-escalation Techniques</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ pbs_plan.deescalation_techniques|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card mb-4">
+                                <div class="card-header bg-danger text-white">
+                                    <h6>Emergency Procedures</h6>
+                                </div>
+                                <div class="card-body">
+                                    {{ pbs_plan.emergency_procedures|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="alert alert-info">
+                                <strong>Status:</strong> 
+                                {% if pbs_plan.is_active %}
+                                    <span class="badge badge-success">Active</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Inactive</span>
+                                {% endif %}
+                                <br>
+                                <strong>Created:</strong> {{ pbs_plan.created_at }} by {{ pbs_plan.created_by.get_full_name }}<br>
+                                <strong>Last Updated:</strong> {{ pbs_plan.updated_at }} by {{ pbs_plan.updated_by.get_full_name }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

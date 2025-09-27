@@ -1,0 +1,526 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title">
+            <i class="fas fa-pills me-2"></i> Medication Details
+        </h2>
+        <div class="header-actions">
+            {% if user.is_staff or user.profile.role == 'management' %}
+            <a href="{% url 'medication_update' medication.pk %}" class="btn btn-outline-secondary">
+                <i class="fas fa-edit me-1"></i> Edit
+            </a>
+            {% endif %}
+            <a href="{% url 'medication_administration_create_for_med' medication.pk %}" class="btn btn-primary">
+                <i class="fas fa-syringe me-1"></i> Administer
+            </a>
+            <a href="{% url 'medication_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Display messages -->
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Left Column - Main Details -->
+        <div class="col-lg-8">
+            <!-- Medication Header Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0 text-primary">{{ medication.name }}</h4>
+                        <div class="d-flex gap-2">
+                            <span class="badge {% if medication.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if medication.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                            {% if medication.is_controlled_drug %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-exclamation-triangle me-1"></i> Controlled Drug
+                            </span>
+                            {% endif %}
+                            {% if medication.requires_refrigeration %}
+                            <span class="badge bg-info">
+                                <i class="fas fa-snowflake me-1"></i> Refrigeration
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Basic Information</h6>
+                            <p>
+                                <strong>Service User:</strong><br>
+                                <div class="user-info mt-2">
+                                    {% if medication.service_user.photo %}
+                                    <img src="{{ medication.service_user.photo.url }}" alt="{{ medication.service_user.first_name }} {{ medication.service_user.last_name }}" class="user-avatar-sm">
+                                    {% else %}
+                                    <div class="avatar-placeholder-sm">
+                                        {{ medication.service_user.first_name|first }}{{ medication.service_user.last_name|first }}
+                                    </div>
+                                    {% endif %}
+                                    <span>
+                                        {{ medication.service_user.first_name }} {{ medication.service_user.last_name }}<br>
+                                        <small class="text-muted">Room: {{ medication.service_user.room_number }}</small>
+                                    </span>
+                                </div>
+                            </p>
+                            <p><strong>Dosage:</strong> {{ medication.dosage }}</p>
+                            <p><strong>Frequency:</strong> {{ medication.get_frequency_display }}</p>
+                            <p><strong>Type:</strong> {{ medication.get_medication_type_display }}</p>
+                            <p><strong>Route:</strong> {{ medication.route|default:"Not specified" }}</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Prescription Details</h6>
+                            <p><strong>Start Date:</strong> {{ medication.start_date|date:"M d, Y" }}</p>
+                            {% if medication.end_date %}
+                            <p><strong>End Date:</strong> {{ medication.end_date|date:"M d, Y" }}</p>
+                            {% endif %}
+                            <p><strong>Prescribed By:</strong> {{ medication.prescribed_by }}</p>
+                            {% if medication.reason %}
+                            <p><strong>Reason:</strong> {{ medication.reason }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Administration Schedule Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2 text-info"></i>Administration Schedule
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for period, time, dosage in time_periods %}
+                        <div class="col-md-6 mb-3">
+                            <div class="schedule-item {% if period == 'prn' %}border-warning{% else %}border-primary{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 text-capitalize">
+                                        <i class="fas fa-{% if period == 'morning' %}sun{% endif %}{% if period == 'afternoon' %}sun{% endif %}{% if period == 'evening' %}moon{% endif %}{% if period == 'night' %}bed{% endif %}{% if period == 'prn' %}first-aid{% endif %} me-2"></i>
+                                        {{ period }}
+                                    </h6>
+                                    {% if period != 'prn' %}
+                                    <span class="badge bg-light text-dark">
+                                        {{ time|time:"H:i" }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-1"><strong>Dosage:</strong> {{ dosage }}</p>
+                                {% if period == 'prn' and medication.prn_instructions %}
+                                <p class="mb-0"><strong>Instructions:</strong> {{ medication.prn_instructions }}</p>
+                                {% endif %}
+                                {% if period == 'prn' and medication.prn_max_daily > 0 %}
+                                <small class="text-muted">Max {{ medication.prn_max_daily }} doses per day</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center text-muted py-3">
+                            <i class="fas fa-clock fa-2x mb-2"></i>
+                            <p>No administration schedule configured</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Information Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-box me-2 text-warning"></i>Stock Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="stock-info">
+                                <p><strong>Total Quantity:</strong> {{ medication.total_quantity }}</p>
+                                <p><strong>Current Balance:</strong> 
+                                    <span class="{% if medication.current_balance < 10 %}text-danger{% elif medication.current_balance < 20 %}text-warning{% else %}text-success{% endif %} fw-bold">
+                                        {{ medication.current_balance }}
+                                    </span>
+                                </p>
+                                <p><strong>Status:</strong> 
+                                    <span class="badge bg-{% if medication.status == 'due' %}warning{% elif medication.status == 'out_of_stock' %}danger{% elif medication.status == 'inactive' %}secondary{% else %}success{% endif %}">
+                                        {{ medication.status|title }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="progress-container">
+                                <p class="mb-2"><strong>Stock Level:</strong></p>
+                                <div class="progress" style="height: 20px;">
+                                    {% widthratio medication.current_balance medication.total_quantity 100 as percentage %}
+                                    <div class="progress-bar {% if percentage > 50 %}bg-success{% elif percentage > 25 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ percentage }}%;"
+                                         aria-valuenow="{{ percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ percentage }}%
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ medication.current_balance }} of {{ medication.total_quantity }} remaining</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if medication.is_due and next_due_time %}
+                    <div class="alert alert-warning mt-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-circle me-2 fa-lg"></i>
+                            <div>
+                                <strong>Medication Due</strong><br>
+                                Next administration due: {{ next_due_time|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Instructions Card -->
+            {% if medication.instructions or medication.special_handling %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Instructions & Handling
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if medication.instructions %}
+                    <div class="mb-3">
+                        <h6>Administration Instructions</h6>
+                        <p class="mb-0">{{ medication.instructions }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if medication.special_handling %}
+                    <div>
+                        <h6>Special Handling</h6>
+                        <p class="mb-0">{{ medication.special_handling }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Actions & Statistics -->
+        <div class="col-lg-4">
+            <!-- Quick Actions Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2 text-success"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'medication_administration_create_for_med' medication.pk %}" class="btn btn-primary">
+                            <i class="fas fa-syringe me-1"></i> Administer Medication
+                        </a>
+                        
+                        {% if user.is_staff or user.profile.role == 'management' %}
+                        <a href="{% url 'medication_update' medication.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-edit me-1"></i> Edit Medication
+                        </a>
+                        
+                        <form method="post" action="{% url 'medication_toggle_active' medication.pk %}" class="d-grid">
+                            {% csrf_token %}
+                            <button type="submit" class="btn {% if medication.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                                <i class="fas {% if medication.is_active %}fa-times{% else %}fa-check{% endif %} me-1"></i> 
+                                {% if medication.is_active %}Deactivate{% else %}Activate{% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Administration Statistics Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2 text-info"></i>Administration Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-item text-center">
+                            <div class="stat-number text-primary">{{ today_count }}</div>
+                            <div class="stat-label">Today</div>
+                        </div>
+                        <div class="stat-item text-center">
+                            <div class="stat-number text-info">{{ week_count }}</div>
+                            <div class="stat-label">This Week</div>
+                        </div>
+                        <div class="stat-item text-center">
+                            <div class="stat-number text-success">{{ total_count }}</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                        <div class="stat-item text-center">
+                            <div class="stat-number text-danger">{{ missed_count }}</div>
+                            <div class="stat-label">Missed (7 days)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Administrations Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2 text-warning"></i>Recent Administrations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_administrations %}
+                    <div class="administration-list">
+                        {% for administration in recent_administrations %}
+                        <div class="administration-item {% if forloop.last %}last-item{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <strong>{{ administration.administered_by.user.get_full_name }}</strong>
+                                <small class="text-muted">{{ administration.administered_date|date:"M d" }}</small>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-{% if administration.status == 'given' %}success{% elif administration.status == 'refused' %}danger{% else %}warning{% endif %}">
+                                    {{ administration.get_status_display }}
+                                </span>
+                                <small>{{ administration.administered_time|time:"H:i" }}</small>
+                            </div>
+                            {% if administration.dose_administered %}
+                            <small class="text-muted">Dose: {{ administration.dose_administered }}</small>
+                            {% endif %}
+                            {% if administration.notes %}
+                            <div class="mt-1">
+                                <small class="text-muted">{{ administration.notes|truncatewords:10 }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if not forloop.last %}<hr class="my-2">{% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="#" class="btn btn-sm btn-outline-primary">View All Administrations</a>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p>No administrations recorded</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Medication Status Card -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-heartbeat me-2 text-danger"></i>Medication Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="status-indicators">
+                        <div class="status-item {% if medication.is_active %}active{% else %}inactive{% endif %}">
+                            <i class="fas fa-{% if medication.is_active %}check-circle{% else %}times-circle{% endif %}"></i>
+                            <span>{% if medication.is_active %}Active{% else %}Inactive{% endif %}</span>
+                        </div>
+                        
+                        <div class="status-item {% if medication.is_controlled_drug %}controlled{% endif %}">
+                            <i class="fas fa-{% if medication.is_controlled_drug %}exclamation-triangle{% else %}shield-alt{% endif %}"></i>
+                            <span>{% if medication.is_controlled_drug %}Controlled{% else %}Regular{% endif %}</span>
+                        </div>
+                        
+                        <div class="status-item {% if medication.requires_refrigeration %}refrigeration{% endif %}">
+                            <i class="fas fa-{% if medication.requires_refrigeration %}snowflake{% else %}temperature-high{% endif %}"></i>
+                            <span>{% if medication.requires_refrigeration %}Refrigeration{% else %}Room Temp{% endif %}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Created by {{ medication.created_by.get_full_name }} on {{ medication.created_at|date:"M d, Y" }}
+                            {% if medication.updated_by %}
+                            <br>Last updated by {{ medication.updated_by.get_full_name }} on {{ medication.updated_at|date:"M d, Y" }}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 2px solid #A8CBB7;
+}
+
+.page-title {
+    color: #2c3e50;
+    margin: 0;
+    font-weight: 600;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.user-avatar-sm, .avatar-placeholder-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-sm {
+    background: #A8CBB7;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.schedule-item {
+    padding: 15px;
+    border: 2px solid;
+    border-radius: 10px;
+    background: #f8f9fa;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.stat-item {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+}
+
+.administration-item {
+    padding: 10px 0;
+}
+
+.administration-item:not(.last-item) {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.status-indicators {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 6px;
+    background: #f8f9fa;
+}
+
+.status-item.active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-item.inactive {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.status-item.controlled {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-item.refrigeration {
+    background: #cce7ff;
+    color: #004085;
+}
+
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.messages-container {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .header-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

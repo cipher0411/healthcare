@@ -1,0 +1,178 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="page-header mb-4">
+                <h2 class="page-title">
+                    <i class="fas fa-{% if object %}edit{% else %}plus{% endif %} me-2"></i>
+                    {% if object %}Edit{% else %}Create{% endif %} Medication
+                </h2>
+                <div class="header-actions">
+                    <a href="{% url 'medication_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to List
+                    </a>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">Please correct the following errors:</h6>
+                        <ul class="mb-0">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <form method="post" id="medication-form">
+                        {% csrf_token %}
+                        {% crispy form %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 2px solid #A8CBB7;
+}
+
+.page-title {
+    color: #A8CBB7;
+    margin: 0;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.form-check-input {
+    transform: scale(1.2);
+}
+
+.border-bottom {
+    border-color: #dee2e6 !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default values
+    const startDateField = document.getElementById('id_start_date');
+    if (!startDateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        startDateField.value = today;
+    }
+    
+    const totalQuantityField = document.getElementById('id_total_quantity');
+    if (!totalQuantityField.value) {
+        totalQuantityField.value = 30;
+    }
+    
+    // Toggle time fields based on checkbox state
+    function toggleTimeFields(checkboxId, timeFieldId, dosageFieldId) {
+        const checkbox = document.getElementById(checkboxId);
+        const timeField = document.getElementById(timeFieldId);
+        const dosageField = document.getElementById(dosageFieldId);
+        
+        function updateFields() {
+            const isChecked = checkbox.checked;
+            timeField.disabled = !isChecked;
+            dosageField.disabled = !isChecked;
+            
+            if (!isChecked) {
+                timeField.value = '';
+                dosageField.value = '';
+            } else if (!dosageField.value) {
+                // Set default dosage if not set
+                const mainDosage = document.getElementById('id_dosage').value;
+                if (mainDosage) {
+                    dosageField.value = mainDosage;
+                }
+            }
+        }
+        
+        checkbox.addEventListener('change', updateFields);
+        updateFields(); // Initial state
+    }
+    
+    // Initialize all time field toggles
+    toggleTimeFields('id_administer_morning', 'id_morning_time', 'id_morning_dosage');
+    toggleTimeFields('id_administer_afternoon', 'id_afternoon_time', 'id_afternoon_dosage');
+    toggleTimeFields('id_administer_evening', 'id_evening_time', 'id_evening_dosage');
+    toggleTimeFields('id_administer_night', 'id_night_time', 'id_night_dosage');
+    
+    // Toggle PRN fields
+    const prnCheckbox = document.getElementById('id_administer_prn');
+    const prnMaxDaily = document.getElementById('id_prn_max_daily');
+    const prnInstructions = document.getElementById('id_prn_instructions');
+    
+    function togglePRNFields() {
+        const isChecked = prnCheckbox.checked;
+        prnMaxDaily.disabled = !isChecked;
+        prnInstructions.disabled = !isChecked;
+        
+        if (!isChecked) {
+            prnMaxDaily.value = '';
+            prnInstructions.value = '';
+        }
+    }
+    
+    prnCheckbox.addEventListener('change', togglePRNFields);
+    togglePRNFields(); // Initial state
+    
+    // Controlled drug warning
+    const controlledDrugField = document.getElementById('id_is_controlled_drug');
+    controlledDrugField.addEventListener('change', function() {
+        if (this.checked) {
+            alert('⚠️ Warning: This medication is marked as a controlled drug. Witness verification will be required for administration.');
+        }
+    });
+    
+    // Auto-copy dosage to time-specific fields if empty
+    const mainDosageField = document.getElementById('id_dosage');
+    mainDosageField.addEventListener('blur', function() {
+        const dosageValue = this.value;
+        if (dosageValue) {
+            const dosageFields = [
+                'id_morning_dosage',
+                'id_afternoon_dosage',
+                'id_evening_dosage',
+                'id_night_dosage'
+            ];
+            
+            dosageFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field && !field.value && !field.disabled) {
+                    field.value = dosageValue;
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

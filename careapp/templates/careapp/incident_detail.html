@@ -1,0 +1,533 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-exclamation-circle"></i> Incident Details</h2>
+    <div class="header-actions">
+      {% if user.is_staff or user.profile.role == 'management' %}
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'incident_update' incident.pk %}'">
+            <i class="fas fa-edit"></i> Edit
+        </button>
+        {% endif %}
+        <button class="btn btn-outline-primary" onclick="location.href='{% url 'incident_list' %}'">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </button>
+    </div>
+</div>
+
+<div class="incident-detail">
+    <div class="incident-header">
+        <div class="incident-main-info">
+            <h1>{{ incident.title }}</h1>
+            <div class="incident-meta">
+                <span class="incident-type">{{ incident.get_incident_type_display }}</span>
+                <span class="incident-date">{{ incident.date|date:"M d, Y" }} at {{ incident.time }}</span>
+                <span class="badge badge-{{ incident.severity }}">{{ incident.get_severity_display }}</span>
+                {% if incident.follow_up_required %}
+                <span class="badge badge-warning">Follow-up Required</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if incident.follow_up_required %}
+        <div class="incident-actions">
+            <form method="post" action="{% url 'incident_toggle_follow_up' incident.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check"></i> Mark as Resolved
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="incident-content">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="incident-card">
+                    <h3><i class="fas fa-info-circle"></i> Incident Details</h3>
+                    <div class="incident-description">
+                        <p>{{ incident.description }}</p>
+                    </div>
+                    
+                    <div class="incident-info-grid">
+                        <div class="info-item">
+                            <strong>Service User:</strong>
+                            <div class="user-info">
+                                {% if incident.service_user.photo %}
+                                <img src="{{ incident.service_user.photo.url }}" alt="{{ incident.service_user.first_name }} {{ incident.service_user.last_name }}" class="user-avatar-sm">
+                                {% else %}
+                                <div class="avatar-placeholder-sm">
+                                    {{ incident.service_user.first_name|first }}{{ incident.service_user.last_name|first }}
+                                </div>
+                                {% endif %}
+                                <span>{{ incident.service_user.first_name }} {{ incident.service_user.last_name }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>Location:</strong>
+                            <span>{{ incident.location }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>Date & Time:</strong>
+                            <span>{{ incident.date|date:"M d, Y" }} at {{ incident.time }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="incident-section">
+                        <h4><i class="fas fa-tasks"></i> Actions Taken</h4>
+                        <p>{{ incident.actions_taken }}</p>
+                    </div>
+                    
+                    {% if incident.follow_up_required and incident.follow_up_notes %}
+                    <div class="incident-section">
+                        <h4><i class="fas fa-clipboard-list"></i> Follow-up Notes</h4>
+                        <p>{{ incident.follow_up_notes }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if incident.reported_to_family and incident.family_notification_details %}
+                    <div class="incident-section">
+                        <h4><i class="fas fa-users"></i> Family Notification</h4>
+                        <p>{{ incident.family_notification_details }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if incident.witnesses %}
+                    <div class="incident-section">
+                        <h4><i class="fas fa-eye"></i> Witnesses</h4>
+                        <p>{{ incident.witnesses }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- ABC Analysis -->
+                {% if incident.antecedent or incident.behavior or incident.consequence %}
+                <div class="incident-card">
+                    <h3><i class="fas fa-chart-bar"></i> ABC Analysis</h3>
+                    
+                    {% if incident.antecedent %}
+                    <div class="abc-section">
+                        <h4><i class="fas fa-arrow-left"></i> Antecedent (What happened before)</h4>
+                        <p>{{ incident.antecedent }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if incident.behavior %}
+                    <div class="abc-section">
+                        <h4><i class="fas fa-activity"></i> Behavior (What occurred)</h4>
+                        <p>{{ incident.behavior }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if incident.consequence %}
+                    <div class="abc-section">
+                        <h4><i class="fas fa-arrow-right"></i> Consequence (What happened after)</h4>
+                        <p>{{ incident.consequence }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Staff Involved -->
+                <div class="incident-card">
+                    <h3><i class="fas fa-user-tie"></i> Staff Involved</h3>
+                    {% if incident.staff_involved.all %}
+                    <div class="staff-list">
+                        {% for staff in incident.staff_involved.all %}
+                        <div class="staff-item">
+                            <div class="staff-avatar">
+                                {% if staff.photo %}
+                                <img src="{{ staff.photo.url }}" alt="{{ staff.user.get_full_name }}">
+                                {% else %}
+                                <div class="avatar-placeholder">
+                                    {{ staff.user.first_name|first }}{{ staff.user.last_name|first }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="staff-info">
+                                <strong>{{ staff.user.get_full_name }}</strong>
+                                <p>{{ staff.position }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No staff involved in this incident.</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Incident Timeline -->
+                <div class="incident-card">
+                    <h3><i class="fas fa-history"></i> Incident Timeline</h3>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <strong>Reported</strong>
+                                <p>by {{ incident.created_by.get_full_name }}</p>
+                                <small>{{ incident.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if incident.updated_at != incident.created_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <strong>Updated</strong>
+                                <p>by {{ incident.updated_by.get_full_name }}</p>
+                                <small>{{ incident.updated_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if not incident.follow_up_required %}
+                        <div class="timeline-item">
+                            <div class="timeline-point resolved"></div>
+                            <div class="timeline-content">
+                                <strong>Resolved</strong>
+                                <small>{{ incident.updated_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- CQC Information -->
+                {% if is_management or is_cqc %}
+                <div class="incident-card">
+                    <h3><i class="fas fa-shield-alt"></i> CQC Information</h3>
+                    <div class="cqc-info">
+                        <div class="info-item">
+                            <strong>CQC Can View:</strong>
+                            <span>{% if incident.cqc_can_view %}Yes{% else %}No{% endif %}</span>
+                        </div>
+                        
+                        {% if incident.cqc_can_view %}
+                        <div class="info-item">
+                            <strong>Viewable After:</strong>
+                            <span>{{ incident.cqc_viewable_after|date:"M d, Y H:i" }}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>Currently Viewable:</strong>
+                            <span>{% if incident.is_viewable_by_cqc %}Yes{% else %}No{% endif %}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.incident-detail {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.incident-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.incident-main-info h1 {
+    margin-bottom: 15px;
+    color: var(--secondary-color);
+}
+
+.incident-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+
+.incident-meta span {
+    padding: 5px 12px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.incident-type {
+    background: var(--primary-color) !important;
+    color: white;
+}
+
+.incident-actions {
+    margin-left: 20px;
+}
+
+.incident-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.incident-card h3 {
+    margin-bottom: 20px;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.incident-description {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.incident-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.info-item strong {
+    color: var(--secondary-color);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar-sm, .avatar-placeholder-sm {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-sm {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.incident-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+}
+
+.incident-section h4 {
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.abc-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+}
+
+.abc-section h4 {
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.staff-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.staff-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.staff-avatar img, .avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-point {
+    position: absolute;
+    left: -30px;
+    top: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: 4px solid white;
+}
+
+.timeline-point.resolved {
+    background: #28a745;
+}
+
+.timeline-content {
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.timeline-content small {
+    color: #6c757d;
+}
+
+.cqc-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-low { background: #28a745; color: white; }
+.badge-medium { background: #ffc107; color: black; }
+.badge-high { background: #fd7e14; color: white; }
+.badge-critical { background: #dc3545; color: white; }
+.badge-warning { background: #ffc107; color: black; }
+
+@media (max-width: 768px) {
+    .incident-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .incident-actions {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .incident-actions .btn {
+        width: 100%;
+    }
+    
+    .incident-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .incident-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-item {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .staff-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .timeline {
+        padding-left: 20px;
+    }
+    
+    .timeline::before {
+        left: 8px;
+    }
+    
+    .timeline-point {
+        left: -22px;
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .incident-detail {
+        padding: 20px;
+    }
+    
+    .incident-main-info h1 {
+        font-size: 1.5rem;
+    }
+    
+    .incident-card {
+        padding: 15px;
+    }
+    
+    .incident-card h3 {
+        font-size: 1.2rem;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends 'careapp/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>CQC Members</h2>
+    </div>
+    <div class="col-md-6 text-right">
+        <a href="{% url 'cqc_member_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New CQC Member
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Filters</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="form-inline">
+            <div class="form-group mr-2 mb-2">
+                <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ search_query }}">
+            </div>
+            <div class="form-group mr-2 mb-2">
+                <select name="status" class="form-control">
+                    <option value="">All Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary mb-2">Filter</button>
+            <a href="{% url 'cqc_member_list' %}" class="btn btn-secondary mb-2 ml-2">Clear</a>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>CQC ID</th>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cqc_member in page_obj %}
+                    <tr>
+                        <td>{{ cqc_member.cqc_id }}</td>
+                        <td>{{ cqc_member.name }}</td>
+                        <td>{{ cqc_member.user.username }}</td>
+                        <td>{{ cqc_member.email }}</td>
+                        <td>
+                            <span class="badge badge-{% if cqc_member.is_active %}success{% else %}danger{% endif %}">
+                                {% if cqc_member.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'cqc_member_detail' cqc_member.pk %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'cqc_member_edit' cqc_member.pk %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'cqc_member_change_password' cqc_member.pk %}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-key"></i>
+                                </a>
+                                <form method="post" action="{% url 'cqc_member_toggle_active' cqc_member.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-{% if cqc_member.is_active %}danger{% else %}success{% endif %}">
+                                        <i class="fas fa-{% if cqc_member.is_active %}times{% else %}check{% endif %}"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No CQC members found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,503 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-file-alt"></i> Document Details</h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'document_update' document.pk %}'">
+            <i class="fas fa-edit"></i> Edit
+        </button>
+        {% if document.file %}
+        <a href="{% url 'document_download' document.pk %}" class="btn btn-outline-primary">
+            <i class="fas fa-download"></i> Download
+        </a>
+        {% endif %}
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'document_list' %}'">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </button>
+    </div>
+</div>
+
+<div class="document-detail">
+    <div class="document-header">
+        <div class="document-main-info">
+            <h1>{{ document.title }}</h1>
+            <div class="document-meta">
+                <span class="document-type">{{ document.get_document_type_display }}</span>
+                {% if document.service_user %}
+                <span class="document-user">
+                    <i class="fas fa-user"></i> {{ document.service_user.first_name }} {{ document.service_user.last_name }}
+                </span>
+                {% else %}
+                <span class="document-user">
+                    <i class="fas fa-cog"></i> System Document
+                </span>
+                {% endif %}
+                {% if document.is_expired %}
+                <span class="badge badge-danger">Expired</span>
+                {% endif %}
+                {% if document.is_confidential %}
+                <span class="badge badge-warning">Confidential</span>
+                {% endif %}
+                {% if document.cqc_can_view %}
+                <span class="badge badge-info">CQC Access</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="document-actions">
+            {% if document.file %}
+            <a href="{{ document.file.url }}" class="btn btn-primary" download>
+                <i class="fas fa-download"></i> Download Document
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="document-content">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="document-card">
+                    <h3><i class="fas fa-info-circle"></i> Document Information</h3>
+                    
+                    {% if document.description %}
+                    <div class="document-description">
+                        <p>{{ document.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="document-info-grid">
+                        <div class="info-item">
+                            <strong>Document Type:</strong>
+                            <span>{{ document.get_document_type_display }}</span>
+                        </div>
+                        
+                        {% if document.service_user %}
+                        <div class="info-item">
+                            <strong>Service User:</strong>
+                            <div class="user-info">
+                                {% if document.service_user.photo %}
+                                <img src="{{ document.service_user.photo.url }}" alt="{{ document.service_user.first_name }} {{ document.service_user.last_name }}" class="user-avatar-sm">
+                                {% else %}
+                                <div class="avatar-placeholder-sm">
+                                    {{ document.service_user.first_name|first }}{{ document.service_user.last_name|first }}
+                                </div>
+                                {% endif %}
+                                <span>{{ document.service_user.first_name }} {{ document.service_user.last_name }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="info-item">
+                            <strong>Effective Date:</strong>
+                            <span>{% if document.effective_date %}{{ document.effective_date|date:"M d, Y" }}{% else %}Not set{% endif %}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>Expiry Date:</strong>
+                            <span>
+                                {% if document.expiry_date %}
+                                {{ document.expiry_date|date:"M d, Y" }}
+                                {% if document.is_expired %}
+                                <span class="badge badge-danger ml-2">Expired</span>
+                                {% endif %}
+                                {% else %}
+                                Not set
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>Confidential:</strong>
+                            <span>{% if document.is_confidential %}Yes{% else %}No{% endif %}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>CQC Can View:</strong>
+                            <span>{% if document.cqc_can_view %}Yes{% else %}No{% endif %}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>File:</strong>
+                            <span>
+                                {% if document.file %}
+                                {{ document.file.name|cut:"documents/" }}
+                                <span class="file-size">({{ document.file.size|filesizeformat }})</span>
+                                {% else %}
+                                No file uploaded
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- File Preview -->
+                {% if document.file %}
+                <div class="document-card">
+                    <h3><i class="fas fa-eye"></i> File Preview</h3>
+                    <div class="file-preview">
+                        {% if document.file.name|lower|slice:"-4:" == ".pdf" %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-file-pdf"></i> PDF files can be downloaded using the button above.
+                        </div>
+                        {% elif document.file.name|lower|slice:"-4:" == ".doc" or document.file.name|lower|slice:"-5:" == ".docx" %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-file-word"></i> Word documents can be downloaded using the button above.
+                        </div>
+                        {% elif document.file.name|lower|slice:"-4:" == ".xls" or document.file.name|lower|slice:"-5:" == ".xlsx" %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-file-excel"></i> Excel spreadsheets can be downloaded using the button above.
+                        </div>
+                        {% elif document.file.name|lower|slice:"-4:" == ".jpg" or document.file.name|lower|slice:"-5:" == ".jpeg" or document.file.name|lower|slice:"-4:" == ".png" %}
+                        <div class="image-preview">
+                            <img src="{{ document.file.url }}" alt="{{ document.title }}" class="img-fluid rounded">
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-file"></i> File can be downloaded using the button above.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Document Timeline -->
+                <div class="document-card">
+                    <h3><i class="fas fa-history"></i> Document Timeline</h3>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <strong>Created</strong>
+                                <p>by {{ document.created_by.get_full_name }}</p>
+                                <small>{{ document.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if document.updated_at != document.created_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <strong>Updated</strong>
+                                <p>by {{ document.updated_by.get_full_name }}</p>
+                                <small>{{ document.updated_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if document.effective_date %}
+                        <div class="timeline-item">
+                            <div class="timeline-point effective"></div>
+                            <div class="timeline-content">
+                                <strong>Effective Date</strong>
+                                <small>{{ document.effective_date|date:"M d, Y" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if document.expiry_date %}
+                        <div class="timeline-item">
+                            <div class="timeline-point {% if document.is_expired %}expired{% else %}future{% endif %}"></div>
+                            <div class="timeline-content">
+                                <strong>Expiry Date</strong>
+                                <small>{{ document.expiry_date|date:"M d, Y" }}</small>
+                                {% if document.is_expired %}
+                                <span class="badge badge-danger">Expired</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Access Information -->
+                <div class="document-card">
+                    <h3><i class="fas fa-shield-alt"></i> Access Information</h3>
+                    <div class="access-info">
+                        <div class="info-item">
+                            <strong>Confidential:</strong>
+                            <span>{% if document.is_confidential %}Yes{% else %}No{% endif %}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>CQC Access:</strong>
+                            <span>{% if document.cqc_can_view %}Allowed{% else %}Restricted{% endif %}</span>
+                        </div>
+                        
+                        {% if document.is_confidential %}
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle"></i> This document is marked as confidential. 
+                            Access is restricted to authorized personnel only.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.document-detail {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.document-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.document-main-info h1 {
+    margin-bottom: 15px;
+    color: var(--secondary-color);
+}
+
+.document-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+
+.document-meta span {
+    padding: 5px 12px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.document-type {
+    background: var(--primary-color) !important;
+    color: white;
+}
+
+.document-actions {
+    margin-left: 20px;
+}
+
+.document-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.document-card h3 {
+    margin-bottom: 20px;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.document-description {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.document-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.info-item strong {
+    color: var(--secondary-color);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar-sm, .avatar-placeholder-sm {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-sm {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.file-size {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.file-preview {
+    text-align: center;
+}
+
+.image-preview img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-point {
+    position: absolute;
+    left: -30px;
+    top: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: 4px solid white;
+}
+
+.timeline-point.effective {
+    background: #28a745;
+}
+
+.timeline-point.future {
+    background: #17a2b8;
+}
+
+.timeline-point.expired {
+    background: #dc3545;
+}
+
+.timeline-content {
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.timeline-content small {
+    color: #6c757d;
+}
+
+.access-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-danger { background: #dc3545; color: white; }
+.badge-warning { background: #ffc107; color: black; }
+.badge-info { background: #17a2b8; color: white; }
+
+@media (max-width: 768px) {
+    .document-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .document-actions {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .document-actions .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .document-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .document-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-item {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .timeline {
+        padding-left: 20px;
+    }
+    
+    .timeline::before {
+        left: 8px;
+    }
+    
+    .timeline-point {
+        left: -22px;
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .document-detail {
+        padding: 20px;
+    }
+    
+    .document-main-info h1 {
+        font-size: 1.5rem;
+    }
+    
+    .document-card {
+        padding: 15px;
+    }
+    
+    .document-card h3 {
+        font-size: 1.2rem;
+    }
+}
+</script>
+{% endblock %}

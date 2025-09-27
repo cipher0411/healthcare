@@ -1,0 +1,141 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-sitemap"></i> Department Details</h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'department_list' %}'">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </button>
+        {% if user.is_staff or user.profile.role == 'management' %}
+        <button class="btn btn-primary" onclick="location.href='{% url 'department_update' department.pk %}'">
+            <i class="fas fa-edit"></i> Edit Department
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">{{ department.name }}</h5>
+                <span class="badge {% if department.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                    {% if department.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                {% if department.description %}
+                <div class="mb-4">
+                    <h6>Description</h6>
+                    <p>{{ department.description }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6>Manager</h6>
+                            {% if department.manager %}
+                            <div class="user-info">
+                                {% if department.manager.photo %}
+                                <img src="{{ department.manager.photo.url }}" alt="{{ department.manager.user.get_full_name }}" class="user-avatar">
+                                {% else %}
+                                <div class="avatar-placeholder">
+                                    {{ department.manager.user.first_name|first }}{{ department.manager.user.last_name|first }}
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <strong>{{ department.manager.user.get_full_name }}</strong><br>
+                                    <small class="text-muted">{{ department.manager.user.email }}</small>
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6>Staff Members</h6>
+                            <p class="h4">{{ department.staffmember_set.count }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6>Created</h6>
+                            <p>{{ department.created_at|date:"M d, Y" }} by {{ department.created_by.get_full_name }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6>Last Updated</h6>
+                            <p>{{ department.updated_at|date:"M d, Y" }} by {{ department.updated_by.get_full_name }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if user.is_staff or user.profile.role == 'management' %}
+                    <form method="post" action="{% url 'department_toggle_active' department.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn {% if department.is_active %}btn-warning{% else %}btn-success{% endif %} w-100">
+                            <i class="fas {% if department.is_active %}fa-times{% else %}fa-check{% endif %}"></i>
+                            {% if department.is_active %}Deactivate{% else %}Activate{% endif %} Department
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar, .avatar-placeholder {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-success { background: #28a745; color: white; }
+.badge-secondary { background: #6c757d; color: white; }
+</style>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="page-title">
+                <i class="fas fa-shield-alt"></i> Security Dashboard
+            </h2>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h3>{{ failed_logins }}</h3>
+                    <p class="text-muted">Failed Logins (24h)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-user-secret fa-3x text-danger mb-3"></i>
+                    <h3>{{ suspicious_activities }}</h3>
+                    <p class="text-muted">Suspicious Activities (24h)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-globe fa-3x text-info mb-3"></i>
+                    <h3>{{ unique_ips }}</h3>
+                    <p class="text-muted">Unique IPs (24h)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-list-alt fa-3x text-primary mb-3"></i>
+                    <h3>{{ security_logs|length }}</h3>
+                    <p class="text-muted">Recent Security Events</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Recent Security Events</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Status</th>
+                                    <th>IP Address</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in security_logs %}
+                                <tr>
+                                    <td>{{ log.timestamp }}</td>
+                                    <td>{{ log.user|default:"System" }}</td>
+                                    <td>{{ log.action }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if log.status == 'Success' %}success{% elif log.status == 'Failed' %}danger{% else %}warning{% endif %}">
+                                            {{ log.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ log.ip_address }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#detailsModal{{ log.id }}">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Details Modal -->
+                                <div class="modal fade" id="detailsModal{{ log.id }}" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel{{ log.id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="detailsModalLabel{{ log.id }}">Security Event Details</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <p><strong>Timestamp:</strong> {{ log.timestamp }}</p>
+                                                        <p><strong>User:</strong> {{ log.user|default:"System" }}</p>
+                                                        <p><strong>Action:</strong> {{ log.action }}</p>
+                                                        <p><strong>Status:</strong> {{ log.status }}</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <p><strong>IP Address:</strong> {{ log.ip_address }}</p>
+                                                        <p><strong>User Agent:</strong> {{ log.user_agent|truncatewords:5 }}</p>
+                                                    </div>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <div class="col-12">
+                                                        <p><strong>Details:</strong></p>
+                                                        <div class="border rounded p-3">
+                                                            <pre>{{ log.details|pprint }}</pre>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No security events found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        padding: 1rem 1.5rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        color: #4a7b5d;
+    }
+    
+    .badge {
+        font-size: 0.85em;
+        padding: 0.4em 0.6em;
+    }
+    
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+    }
+</style>
+
+<!-- Bootstrap JS for modals -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+{% endblock %}

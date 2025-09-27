@@ -1,0 +1,538 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-walking"></i> Activity Details</h2>
+    <div class="header-actions">
+      {% if user.is_staff or user.profile.role == 'management' %}
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'activity_update' activity.pk %}'">
+            <i class="fas fa-edit"></i> Edit
+        </button>
+        {% endif %}
+        <button class="btn btn-outline-primary" onclick="location.href='{% url 'activity_list' %}'">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </button>
+    </div>
+</div>
+
+<div class="activity-detail">
+    <div class="activity-header">
+        <div class="activity-main-info">
+            <h1>{{ activity.title }}</h1>
+            <div class="activity-meta">
+                <span class="activity-type">{{ activity.get_activity_type_display }}</span>
+                <span class="activity-date">{{ activity.date|date:"M d, Y" }}</span>
+                <span class="activity-time">{{ activity.start_time }} - {% if activity.end_time %}{{ activity.end_time }}{% endif %}</span>
+                <span class="badge {% if activity.is_completed %}badge-success{% else %}badge-warning{% endif %}">
+                    {% if activity.is_completed %}Completed{% else %}Pending{% endif %}
+                </span>
+            </div>
+        </div>
+        
+        {% if not activity.is_completed %}
+        <div class="activity-actions">
+            <form method="post" action="{% url 'activity_complete' activity.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check"></i> Mark as Completed
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="activity-content">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="activity-card">
+                    <h3><i class="fas fa-info-circle"></i> Activity Details</h3>
+                    {% if activity.description %}
+                    <div class="activity-description">
+                        <p>{{ activity.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="activity-info-grid">
+                        <div class="info-item">
+                            <strong>Service User:</strong>
+                            <div class="user-info">
+                                {% if activity.service_user.photo %}
+                                <img src="{{ activity.service_user.photo.url }}" alt="{{ activity.service_user.first_name }} {{ activity.service_user.last_name }}" class="user-avatar-sm">
+                                {% else %}
+                                <div class="avatar-placeholder-sm">
+                                    {{ activity.service_user.first_name|first }}{{ activity.service_user.last_name|first }}
+                                </div>
+                                {% endif %}
+                                <span>{{ activity.service_user.first_name }} {{ activity.service_user.last_name }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>Location:</strong>
+                            <span>{% if activity.location %}{{ activity.location }}{% else %}Not specified{% endif %}</span>
+                        </div>
+                        
+                        <div class="info-item">
+                            <strong>Date & Time:</strong>
+                            <span>{{ activity.date|date:"M d, Y" }} | {{ activity.start_time }}{% if activity.end_time %} - {{ activity.end_time }}{% endif %}</span>
+                        </div>
+                        
+                        {% if activity.provider %}
+                        <div class="info-item">
+                            <strong>Provider:</strong>
+                            <span>{{ activity.provider }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if activity.notes %}
+                    <div class="activity-notes">
+                        <h4><i class="fas fa-sticky-note"></i> Additional Notes</h4>
+                        <p>{{ activity.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Meal Information (if applicable) -->
+                {% if activity.activity_type == 'meal' %}
+                <div class="activity-card">
+                    <h3><i class="fas fa-utensils"></i> Meal Information</h3>
+                    <div class="meal-info">
+                        <div class="info-item">
+                            <strong>Meal Type:</strong>
+                            <span>{{ activity.get_meal_type_display }}</span>
+                        </div>
+                        
+                        {% if activity.food_consumed %}
+                        <div class="info-item">
+                            <strong>Food Consumed:</strong>
+                            <span>{{ activity.food_consumed }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if activity.fluid_intake %}
+                        <div class="info-item">
+                            <strong>Fluid Intake:</strong>
+                            <span>{{ activity.fluid_intake }} ml</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if activity.appetite_level %}
+                        <div class="info-item">
+                            <strong>Appetite Level:</strong>
+                            <span>
+                                {{ activity.appetite_level }}/5
+                                <div class="appetite-meter">
+                                    {% for i in "12345" %}
+                                    <span class="meter-dot {% if forloop.counter <= activity.appetite_level %}active{% endif %}"></span>
+                                    {% endfor %}
+                                </div>
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Photos -->
+                {% if activity.activity_photos.all %}
+                <div class="activity-card">
+                    <h3><i class="fas fa-images"></i> Activity Photos</h3>
+                    <div class="activity-photos">
+                        <div class="row">
+                            {% for photo in activity.activity_photos.all %}
+                            <div class="col-md-4 mb-3">
+                                <div class="photo-card">
+                                    <img src="{{ photo.photo.url }}" alt="{{ photo.caption|default:'Activity photo' }}" class="img-fluid rounded">
+                                    {% if photo.caption %}
+                                    <div class="photo-caption">
+                                        <p>{{ photo.caption }}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Staff Involved -->
+                <div class="activity-card">
+                    <h3><i class="fas fa-user-tie"></i> Staff Involved</h3>
+                    {% if activity.staff_involved.all %}
+                    <div class="staff-list">
+                        {% for staff in activity.staff_involved.all %}
+                        <div class="staff-item">
+                            <div class="staff-avatar">
+                                {% if staff.photo %}
+                                <img src="{{ staff.photo.url }}" alt="{{ staff.user.get_full_name }}">
+                                {% else %}
+                                <div class="avatar-placeholder">
+                                    {{ staff.user.first_name|first }}{{ staff.user.last_name|first }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="staff-info">
+                                <strong>{{ staff.user.get_full_name }}</strong>
+                                <p>{{ staff.position }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No staff assigned to this activity.</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Activity Timeline -->
+                <div class="activity-card">
+                    <h3><i class="fas fa-history"></i> Activity Timeline</h3>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <strong>Created</strong>
+                                <p>by {{ activity.created_by.get_full_name }}</p>
+                                <small>{{ activity.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if activity.updated_at != activity.created_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-point"></div>
+                            <div class="timeline-content">
+                                <strong>Updated</strong>
+                                <p>by {{ activity.updated_by.get_full_name }}</p>
+                                <small>{{ activity.updated_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if activity.is_completed %}
+                        <div class="timeline-item">
+                            <div class="timeline-point completed"></div>
+                            <div class="timeline-content">
+                                <strong>Completed</strong>
+                                <small>{{ activity.updated_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.activity-detail {
+    background: white;
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.activity-main-info h1 {
+    margin-bottom: 15px;
+    color: var(--secondary-color);
+}
+
+.activity-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+
+.activity-meta span {
+    padding: 5px 12px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.activity-type {
+    background: var(--primary-color) !important;
+    color: white;
+}
+
+.activity-actions {
+    margin-left: 20px;
+}
+
+.activity-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.activity-card h3 {
+    margin-bottom: 20px;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.activity-description {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.activity-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.info-item strong {
+    color: var(--secondary-color);
+    margin-bottom: 5px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar-sm, .avatar-placeholder-sm {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-sm {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.appetite-meter {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.meter-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #dee2e6;
+}
+
+.meter-dot.active {
+    background: var(--primary-color);
+}
+
+.activity-notes {
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+}
+
+.staff-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.staff-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.staff-avatar img, .avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-point {
+    position: absolute;
+    left: -30px;
+    top: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: 4px solid white;
+}
+
+.timeline-point.completed {
+    background: #28a745;
+}
+
+.timeline-content {
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+}
+
+.timeline-content small {
+    color: #6c757d;
+}
+
+.photo-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.photo-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.photo-caption {
+    padding: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-success { background: #28a745; color: white; }
+.badge-warning { background: #ffc107; color: black; }
+
+@media (max-width: 768px) {
+    .activity-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .activity-actions {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .activity-actions .btn {
+        width: 100%;
+    }
+    
+    .activity-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .activity-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .staff-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .timeline {
+        padding-left: 20px;
+    }
+    
+    .timeline::before {
+        left: 8px;
+    }
+    
+    .timeline-point {
+        left: -22px;
+        width: 16px;
+        height: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .activity-detail {
+        padding: 20px;
+    }
+    
+    .activity-main-info h1 {
+        font-size: 1.5rem;
+    }
+    
+    .activity-card {
+        padding: 15px;
+    }
+    
+    .activity-card h3 {
+        font-size: 1.2rem;
+    }
+}
+</script>
+{% endblock %}

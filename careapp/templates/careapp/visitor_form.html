@@ -1,0 +1,123 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">
+        <i class="fas fa-{% if object %}edit{% else %}plus{% endif %}"></i>
+        {% if object %}Edit{% else %}Create{% endif %} Visitor
+    </h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'visitor_list' %}'">
+            <i class="fas fa-arrow-left"></i> Cancel
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form.service_user|as_crispy_field }}
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form.visitor_name|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.relationship|as_crispy_field }}
+                </div>
+            </div>
+            
+            {{ form.phone_number|as_crispy_field }}
+            
+            <div class="row">
+                <div class="col-md-4">
+                    {{ form.visit_date|as_crispy_field }}
+                </div>
+                <div class="col-md-4">
+                    {{ form.arrival_time|as_crispy_field }}
+                </div>
+                <div class="col-md-4">
+                    {{ form.departure_time|as_crispy_field }}
+                </div>
+            </div>
+            
+            {{ form.purpose|as_crispy_field }}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form.covid_screening_passed|as_crispy_field }}
+                </div>
+            </div>
+            
+            {{ form.notes|as_crispy_field }}
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {% if object %}Update{% else %}Create{% endif %} Visitor
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="location.href='{% url 'visitor_list' %}'">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .form-actions {
+        text-align: center;
+    }
+    
+    .form-actions .btn {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date to today if not set
+    const dateField = document.getElementById('id_visit_date');
+    if (!dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
+    }
+    
+    // Set default arrival time to now if not set
+    const arrivalTimeField = document.getElementById('id_arrival_time');
+    if (!arrivalTimeField.value) {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        arrivalTimeField.value = `${hours}:${minutes}`;
+    }
+    
+    // Set default departure time to 1 hour after arrival time if not set
+    const departureTimeField = document.getElementById('id_departure_time');
+    if (!departureTimeField.value && arrivalTimeField.value) {
+        const [hours, minutes] = arrivalTimeField.value.split(':');
+        const departureTime = new Date();
+        departureTime.setHours(parseInt(hours) + 1);
+        departureTime.setMinutes(parseInt(minutes));
+        departureTimeField.value = `${departureTime.getHours().toString().padStart(2, '0')}:${departureTime.getMinutes().toString().padStart(2, '0')}`;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,319 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Date Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm">
+                <a href="?date={{ prev_date.isoformat }}" class="btn btn-outline-primary {% if not prev_date %}disabled{% endif %}">
+                    <i class="fas fa-chevron-left"></i> Previous Day
+                </a>
+                
+                <div class="text-center">
+                    <h3 class="mb-0">{{ selected_date|date:"l, F j, Y" }}</h3>
+                    {% if selected_date == today %}
+                    <span class="badge bg-success">Today</span>
+                    {% endif %}
+                </div>
+                
+                <a href="?date={{ next_date.isoformat }}" class="btn btn-outline-primary {% if not next_date %}disabled{% endif %}">
+                    Next Day <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Users Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">My Service Users</h2>
+            <div class="row">
+                {% for data in service_users_data %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 service-user-card" data-service-user-id="{{ data.service_user.id }}">
+                        <div class="card-body text-center">
+                            {% if data.service_user.photo %}
+                            <img src="{{ data.service_user.photo.url }}" alt="{{ data.service_user.first_name }} {{ data.service_user.last_name }}" class="rounded-circle mb-3" width="80" height="80">
+                            {% else %}
+                            <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <span class="text-white fs-4">{{ data.service_user.first_name|first }}{{ data.service_user.last_name|first }}</span>
+                            </div>
+                            {% endif %}
+                            <h5 class="card-title">{{ data.service_user.first_name }} {{ data.service_user.last_name }}</h5>
+                            <p class="text-muted">Room: {{ data.service_user.room_number }}</p>
+                            <div class="d-flex justify-content-center flex-wrap gap-2">
+                                <span class="badge bg-info">Age: {{ data.service_user.age }}</span>
+                                <span class="badge bg-secondary">{{ data.service_user.gender }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> No service users assigned to you.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Service User Details Section -->
+    {% for data in service_users_data %}
+    <div class="service-user-details" id="service-user-{{ data.service_user.id }}" style="display: none;">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>{{ data.service_user.first_name }} {{ data.service_user.last_name }}'s Activities</h2>
+                    <button class="btn btn-sm btn-outline-secondary back-to-list">
+                        <i class="fas fa-arrow-left me-1"></i> Back to List
+                    </button>
+                </div>
+                
+                <!-- Activities Card -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-walking text-primary me-2"></i> Activities
+                            <span class="badge bg-primary ms-2">{{ data.activities|length }}</span>
+                        </h5>
+                        <a href="{% url 'activity_create' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus me-1"></i> Add Activity
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if data.activities %}
+                        <div class="row">
+                            {% for activity in data.activities %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ activity.title }}</h6>
+                                        <p class="card-text text-muted small">
+                                            <i class="fas fa-clock me-1"></i> {{ activity.start_time|time }} - {% if activity.end_time %}{{ activity.end_time|time }}{% endif %}
+                                        </p>
+                                        <p class="card-text small">{{ activity.description|truncatewords:15 }}</p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{% url 'activity_detail' activity.id %}" class="btn btn-sm btn-outline-primary w-100">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">No activities scheduled for {{ selected_date|date:"M j" }}.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Medications Card -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-pills text-success me-2"></i> Medications
+                            <span class="badge bg-success ms-2">{{ data.medications|length }}</span>
+                        </h5>
+                        <a href="{% url 'medication_create' %}" class="btn btn-sm btn-success">
+                            <i class="fas fa-plus me-1"></i> Add Medication
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if data.medications %}
+                        <div class="row">
+                            {% for medication in data.medications %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ medication.name }}</h6>
+                                        <p class="card-text text-muted small">
+                                            <i class="fas fa-info-circle me-1"></i> {{ medication.dosage }} - {{ medication.get_frequency_display }}
+                                        </p>
+                                        <p class="card-text small">
+                                            <span class="badge bg-{% if medication.is_due %}warning{% else %}info{% endif %}">
+                                                {% if medication.is_due %}Due Now{% else %}Next: {{ medication.get_next_due_time|time }}{% endif %}
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{% url 'medication_detail' medication.id %}" class="btn btn-sm btn-outline-success w-100">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">No medications prescribed.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Incidents Card -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle text-danger me-2"></i> Incidents
+                            <span class="badge bg-danger ms-2">{{ data.incidents|length }}</span>
+                        </h5>
+                        <a href="{% url 'incident_create' %}" class="btn btn-sm btn-danger">
+                            <i class="fas fa-plus me-1"></i> Report Incident
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if data.incidents %}
+                        <div class="row">
+                            {% for incident in data.incidents %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ incident.title }}</h6>
+                                        <p class="card-text text-muted small">
+                                            <i class="fas fa-clock me-1"></i> {{ incident.time|time }}
+                                            <span class="badge bg-{% if incident.severity == 'critical' %}danger{% elif incident.severity == 'high' %}warning{% else %}info{% endif %} ms-2">
+                                                {{ incident.get_severity_display }}
+                                            </span>
+                                        </p>
+                                        <p class="card-text small">{{ incident.description|truncatewords:15 }}</p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="{% url 'incident_detail' incident.id %}" class="btn btn-sm btn-outline-danger w-100">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">No incidents reported for {{ selected_date|date:"M j" }}.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Add more cards for other data types (visitors, trips, etc.) following the same pattern -->
+
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Floating Action Button -->
+    <div class="floating-action">
+        <button class="btn btn-primary rounded-circle p-3" data-bs-toggle="modal" data-bs-target="#quickActionsModal">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
+    <!-- Quick Actions Modal -->
+    <div class="modal fade" id="quickActionsModal" tabindex="-1" aria-labelledby="quickActionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="quickActionsModalLabel">Quick Actions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'activity_create' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-walking me-2"></i> Add Activity
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'medication_administration_create' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-pills me-2"></i> Administer Medication
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'incident_create' %}" class="btn btn-outline-danger w-100">
+                                <i class="fas fa-exclamation-triangle me-2"></i> Report Incident
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'visitor_create' %}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-user-plus me-2"></i> Log Visitor
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'dailysummary_create' %}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-clipboard-list me-2"></i> Daily Summary
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{% url 'vitalsigns_create' %}" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-heartbeat me-2"></i> Record Vitals
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .service-user-card {
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    
+    .service-user-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .floating-action {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 1000;
+    }
+    
+    .floating-action button {
+        width: 60px;
+        height: 60px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Service user card click handler
+        document.querySelectorAll('.service-user-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const serviceUserId = this.dataset.serviceUserId;
+                
+                // Hide all service user details
+                document.querySelectorAll('.service-user-details').forEach(detail => {
+                    detail.style.display = 'none';
+                });
+                
+                // Show the selected service user details
+                document.getElementById(`service-user-${serviceUserId}`).style.display = 'block';
+                
+                // Scroll to the details section
+                document.getElementById(`service-user-${serviceUserId}`).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+        
+        // Back to list button handler
+        document.querySelectorAll('.back-to-list').forEach(button => {
+            button.addEventListener('click', function() {
+                // Hide all service user details
+                document.querySelectorAll('.service-user-details').forEach(detail => {
+                    detail.style.display = 'none';
+                });
+                
+                // Scroll back to the top
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

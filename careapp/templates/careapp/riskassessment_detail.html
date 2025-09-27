@@ -1,0 +1,262 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header d-flex justify-content-between align-items-center">
+                <h2 class="page-title">
+                    <i class="fas fa-exclamation-triangle"></i> Risk Assessment Details
+                </h2>
+                <div class="header-actions">
+                    {% if user.is_staff or user.profile.role == 'management' %}
+                    <a href="{% url 'riskassessment_update' object.pk %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'riskassessment_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{{ object.category }}</h5>
+                    <span class="badge badge-{% if object.risk_level == 'low' %}success{% elif object.risk_level == 'medium' %}warning{% else %}danger{% endif %}">
+                        {{ object.get_risk_level_display }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-item">
+                                <strong><i class="fas fa-user mr-2"></i> Service User:</strong>
+                                <div class="user-info mt-2">
+                                    {% if object.service_user.photo %}
+                                    <img src="{{ object.service_user.photo.url }}" alt="{{ object.service_user.first_name }} {{ object.service_user.last_name }}" class="user-avatar-md mr-2">
+                                    {% else %}
+                                    <div class="avatar-placeholder-md mr-2">
+                                        {{ object.service_user.first_name|first }}{{ object.service_user.last_name|first }}
+                                    </div>
+                                    {% endif %}
+                                    <span>{{ object.service_user.first_name }} {{ object.service_user.last_name }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="detail-item mt-3">
+                                <strong><i class="fas fa-calendar-alt mr-2"></i> Date Assessed:</strong>
+                                <p class="mb-0">{{ object.date_assessed|date:"M d, Y" }}</p>
+                            </div>
+                            
+                            <div class="detail-item mt-3">
+                                <strong><i class="fas fa-calendar-check mr-2"></i> Review Date:</strong>
+                                <p class="mb-0">{{ object.review_date|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="detail-item">
+                                <strong><i class="fas fa-circle mr-2" style="color: {% if object.is_active %}#28a745{% else %}#6c757d{% endif %}"></i> Status:</strong>
+                                <p class="mb-0">{{ object.is_active|yesno:"Active,Inactive" }}</p>
+                            </div>
+                            
+                            <div class="detail-item mt-3">
+                                <strong><i class="fas fa-user-plus mr-2"></i> Created By:</strong>
+                                <p class="mb-0">{{ object.created_by.get_full_name|default:object.created_by.username }}</p>
+                                <small class="text-muted">{{ object.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                            
+                            <div class="detail-item mt-3">
+                                <strong><i class="fas fa-user-edit mr-2"></i> Last Updated By:</strong>
+                                <p class="mb-0">{{ object.updated_by.get_full_name|default:object.updated_by.username }}</p>
+                                <small class="text-muted">{{ object.updated_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if object.description %}
+                    <div class="detail-item mt-4">
+                        <strong><i class="fas fa-sticky-note mr-2"></i> Description:</strong>
+                        <p class="mt-2">{{ object.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if object.assessment_details %}
+                    <div class="detail-item mt-4">
+                        <strong><i class="fas fa-clipboard-list mr-2"></i> Assessment Details:</strong>
+                        <p class="mt-2">{{ object.assessment_details }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if object.mitigation_strategies %}
+                    <div class="detail-item mt-4">
+                        <strong><i class="fas fa-shield-alt mr-2"></i> Mitigation Strategies:</strong>
+                        <p class="mt-2">{{ object.mitigation_strategies }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if object.control_measures %}
+                    <div class="detail-item mt-4">
+                        <strong><i class="fas fa-tasks mr-2"></i> Control Measures:</strong>
+                        <p class="mt-2">{{ object.control_measures }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if object.notes %}
+                    <div class="detail-item mt-4">
+                        <strong><i class="fas fa-sticky-note mr-2"></i> Additional Notes:</strong>
+                        <p class="mt-2">{{ object.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if user.is_staff or user.profile.role == 'management' %}
+                        <a href="{% url 'riskassessment_toggle_active' object.pk %}" class="btn btn-{% if object.is_active %}warning{% else %}success{% endif %}">
+                            <i class="fas fa-{% if object.is_active %}times{% else %}check{% endif %}"></i> 
+                            {% if object.is_active %}Deactivate{% else %}Activate{% endif %} Assessment
+                        </a>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-info" onclick="window.print()">
+                            <i class="fas fa-print"></i> Print Assessment
+                        </button>
+                        
+                        {% if user.is_staff or user.profile.role == 'management' %}
+                        <a href="{% url 'riskassessment_update' object.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-edit"></i> Edit Assessment
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title">Risk Level Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="risk-info">
+                        <div class="risk-level low">
+                            <span class="badge badge-success">Low Risk</span>
+                            <p class="mt-2 small">Minimal impact, easily manageable with standard procedures.</p>
+                        </div>
+                        
+                        <div class="risk-level medium mt-3">
+                            <span class="badge badge-warning">Medium Risk</span>
+                            <p class="mt-2 small">Moderate impact, requires specific controls and monitoring.</p>
+                        </div>
+                        
+                        <div class="risk-level high mt-3">
+                            <span class="badge badge-danger">High Risk</span>
+                            <p class="mt-2 small">Significant impact, requires immediate attention and robust controls.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title">Assessment History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="history-item">
+                        <strong>Created:</strong> {{ object.created_at|date:"M d, Y H:i" }} by {{ object.created_by.get_full_name|default:object.created_by.username }}
+                    </div>
+                    <div class="history-item mt-2">
+                        <strong>Last Updated:</strong> {{ object.updated_at|date:"M d, Y H:i" }} by {{ object.updated_by.get_full_name|default:object.updated_by.username }}
+                    </div>
+                    {% if object.review_date < today %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-circle"></i> This assessment is due for review.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.user-avatar-md, .avatar-placeholder-md {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.avatar-placeholder-md {
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.detail-item {
+    margin-bottom: 1rem;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.btn-group .btn {
+    margin-right: 0.5rem;
+}
+
+.risk-level p {
+    margin-bottom: 0;
+}
+
+.history-item {
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .header-actions {
+        margin-top: 1rem;
+        width: 100%;
+    }
+    
+    .header-actions .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}

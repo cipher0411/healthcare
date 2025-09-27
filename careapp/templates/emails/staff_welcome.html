@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Welcome to CareHome Management System</title>
+</head>
+<body>
+    <h2>Welcome to CareHome Management System</h2>
+    
+    <p>Dear {{ staff_member.user.get_full_name }},</p>
+    
+    <p>Your account has been created successfully. Here are your login details:</p>
+    
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+        <p><strong>Username:</strong> {{ username }}</p>
+        <p><strong>Temporary Password:</strong> {{ temp_password }}</p>
+        <p><strong>Login URL:</strong> <a href="{{ login_url }}">{{ login_url }}</a></p>
+    </div>
+    
+    <p>Please change your password after your first login for security reasons.</p>
+    
+    <p>Best regards,<br>CareHome Management Team</p>
+</body>
+</html>

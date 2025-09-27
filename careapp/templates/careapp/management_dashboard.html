@@ -1,0 +1,244 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-chart-line"></i> Management Dashboard</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary" onclick="location.href='{% url 'managementdailynote_create' %}'">
+            <i class="fas fa-plus"></i> New Note
+        </button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <i class="fas fa-users"></i>
+        <h3>{{ active_service_users }}</h3>
+        <p>Active Service Users</p>
+    </div>
+    <div class="stat-card">
+        <i class="fas fa-user-tie"></i>
+        <h3>{{ active_staff }}</h3>
+        <p>Active Staff Members</p>
+    </div>
+    <div class="stat-card">
+        <i class="fas fa-walking"></i>
+        <h3>{{ today_activities }}</h3>
+        <p>Today's Activities</p>
+    </div>
+    <div class="stat-card">
+        <i class="fas fa-exclamation-circle"></i>
+        <h3>{{ pending_incidents }}</h3>
+        <p>Pending Incidents</p>
+    </div>
+</div>
+
+<div class="dashboard-sections">
+    <div class="dashboard-section">
+        <h3><i class="fas fa-sticky-note"></i> Action Required Notes</h3>
+        <div class="card">
+            <div class="card-body">
+                {% if recent_notes %}
+                <div class="notes-list">
+                    {% for note in recent_notes %}
+                    <div class="note-item">
+                        <div class="note-header">
+                            <h4>{{ note.title }}</h4>
+                            <span class="badge badge-{{ note.priority }}">{{ note.get_priority_display }}</span>
+                        </div>
+                        <p class="note-desc">{{ note.note|truncatewords:30 }}</p>
+                        <div class="note-meta">
+                            <span>Created: {{ note.created_at|date:"M d, Y" }}</span>
+                            {% if note.action_deadline %}
+                            <span>Deadline: {{ note.action_deadline|date:"M d, Y" }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No action required notes.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer" style="text-align: right;">
+                <a href="{% url 'managementdailynote_list' %}" class="btn btn-primary btn-sm">View All Notes</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-section">
+        <h3><i class="fas fa-exchange-alt"></i> Upcoming Handovers</h3>
+        <div class="card">
+            <div class="card-body">
+                {% if upcoming_handovers %}
+                <div class="handover-list">
+                    {% for handover in upcoming_handovers %}
+                    <div class="handover-item">
+                        <div class="handover-header">
+                            <h4>Handover on {{ handover.handover_date|date:"M d, Y" }}</h4>
+                            <span class="badge {% if handover.acknowledged %}badge-success{% else %}badge-warning{% endif %}">
+                                {% if handover.acknowledged %}Acknowledged{% else %}Pending{% endif %}
+                            </span>
+                        </div>
+                        <p>From: {{ handover.handed_over_by.user.get_full_name }}</p>
+                        <p>To: {{ handover.handed_over_to.user.get_full_name }}</p>
+                        <p class="handover-desc">{{ handover.notes|truncatewords:20 }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No upcoming handovers.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer" style="text-align: right;">
+                <a href="{% url 'managementhandover_list' %}" class="btn btn-primary btn-sm">View All Handovers</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-section full-width">
+    <h3><i class="fas fa-clipboard-list"></i> Governance Issues</h3>
+    <div class="card">
+        <div class="card-body">
+            {% if governance_issues %}
+            <div class="governance-list">
+                {% for issue in governance_issues %}
+                <div class="governance-item">
+                    <div class="governance-header">
+                        <h4>{{ issue.title }}</h4>
+                        <span class="badge badge-{{ issue.record_type }}">{{ issue.get_record_type_display }}</span>
+                    </div>
+                    <p class="governance-desc">{{ issue.description|truncatewords:30 }}</p>
+                    <div class="governance-meta">
+                        <span>Occurred: {{ issue.date_occurred|date:"M d, Y" }}</span>
+                        {% if issue.related_department %}
+                        <span>Department: {{ issue.related_department.name }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">No governance issues requiring attention.</p>
+            {% endif %}
+        </div>
+        <div class="card-footer" style="text-align: right;">
+            <a href="{% url 'governancerecord_list' %}" class="btn btn-primary btn-sm">View All Governance Records</a>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+    <a href="{% url 'serviceuser_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Service User
+    </a>
+    <a href="{% url 'staff_member_list' %}" class="btn btn-primary">
+        <i class="fas fa-user-plus"></i> Add Staff Member
+    </a>
+    <a href="{% url 'cqc_member_list' %}" class="btn btn-secondary">
+        <i class="fas fa-sticky-note"></i> Add CQC
+    </a>
+    <a href="{% url 'managementhandover_create' %}" class="btn btn-secondary">
+        <i class="fas fa-exchange-alt"></i> Create Handover
+    </a>
+</div>
+
+<style>
+.dashboard-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.dashboard-section {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.dashboard-section.full-width {
+    grid-column: 1 / -1;
+}
+
+.dashboard-section h3 {
+    margin-bottom: 15px;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.note-item, .handover-item, .governance-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.note-item:last-child, .handover-item:last-child, .governance-item:last-child {
+    border-bottom: none;
+}
+
+.note-header, .handover-header, .governance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.note-header h4, .handover-header h4, .governance-header h4 {
+    margin: 0;
+    flex: 1;
+}
+
+.note-desc, .handover-desc, .governance-desc {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.note-meta, .governance-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 12px;
+    color: #888;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-success { background: #28a745; color: white; }
+.badge-warning { background: #ffc107; color: black; }
+.badge-low { background: #28a745; color: white; }
+.badge-medium { background: #ffc107; color: black; }
+.badge-high { background: #fd7e14; color: white; }
+.badge-urgent { background: #dc3545; color: white; }
+.badge-policy { background: #6f42c1; color: white; }
+.badge-audit { background: #20c997; color: white; }
+.badge-complaint { background: #fd7e14; color: white; }
+.badge-incident { background: #dc3545; color: white; }
+
+@media (max-width: 768px) {
+    .dashboard-sections {
+        grid-template-columns: 1fr;
+    }
+    
+    .note-header, .handover-header, .governance-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .note-meta, .governance-meta {
+        flex-direction: column;
+        gap: 5px;
+    }
+}
+</style>
+{% endblock %}

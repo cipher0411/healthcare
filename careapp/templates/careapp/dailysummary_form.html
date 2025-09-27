@@ -1,0 +1,113 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">
+        <i class="fas fa-{% if object %}edit{% else %}plus{% endif %}"></i>
+        {% if object %}Edit{% else %}Create{% endif %} Daily Summary
+    </h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'dailysummary_list' %}'">
+            <i class="fas fa-arrow-left"></i> Cancel
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            {{ form.shift|as_crispy_field }}
+            
+            <div class="shift-info alert alert-info" id="shiftInfo" style="display: none;">
+                <h5>Shift Information</h5>
+                <div id="shiftDetails"></div>
+            </div>
+            
+            {{ form.service_users_present|as_crispy_field }}
+            {{ form.general_observations|as_crispy_field }}
+            {{ form.issues_concerns|as_crispy_field }}
+            {{ form.positive_events|as_crispy_field }}
+            {{ form.tasks_completed|as_crispy_field }}
+            {{ form.tasks_pending|as_crispy_field }}
+            {{ form.handover_notes|as_crispy_field }}
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {% if object %}Update{% else %}Create{% endif %} Daily Summary
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="location.href='{% url 'dailysummary_list' %}'">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .form-actions {
+        text-align: center;
+    }
+    
+    .form-actions .btn {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shiftField = document.getElementById('id_shift');
+    const shiftInfo = document.getElementById('shiftInfo');
+    const shiftDetails = document.getElementById('shiftDetails');
+    
+    // Function to fetch and display shift details
+    function updateShiftInfo() {
+        const shiftId = shiftField.value;
+        if (shiftId) {
+            fetch(`/api/shift/${shiftId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    shiftDetails.innerHTML = `
+                        <p><strong>Staff:</strong> ${data.staff_member}</p>
+                        <p><strong>Date:</strong> ${data.shift_date}</p>
+                        <p><strong>Shift Type:</strong> ${data.shift_type}</p>
+                        <p><strong>Time:</strong> ${data.start_time} - ${data.end_time}</p>
+                        ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ''}
+                    `;
+                    shiftInfo.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error fetching shift details:', error);
+                    shiftInfo.style.display = 'none';
+                });
+        } else {
+            shiftInfo.style.display = 'none';
+        }
+    }
+    
+    // Initial update
+    updateShiftInfo();
+    
+    // Update when shift selection changes
+    shiftField.addEventListener('change', updateShiftInfo);
+    
+    // Check if we're editing an existing summary
+    {% if object %}
+    shiftField.disabled = true;
+    {% endif %}
+});
+</script>
+{% endblock %}

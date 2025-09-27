@@ -1,0 +1,132 @@
+{% extends 'careapp/base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>CQC Member Details</h2>
+    </div>
+    <div class="col-md-6 text-right">
+        <a href="{% url 'cqc_member_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 200px; height: 200px;">
+                    <i class="fas fa-user-tie fa-5x text-muted"></i>
+                </div>
+                <h4>{{ cqc_member.name }}</h4>
+                <p class="text-muted">CQC Member</p>
+                <p>
+                    <span class="badge badge-{% if cqc_member.is_active %}success{% else %}danger{% endif %}">
+                        {% if cqc_member.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>CQC ID:</strong> {{ cqc_member.cqc_id }}</p>
+                        <p><strong>Username:</strong> {{ cqc_member.user.username }}</p>
+                        <p><strong>Email:</strong> {{ cqc_member.email }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Phone:</strong> {{ cqc_member.phone_number|default:"-" }}</p>
+                        <p><strong>Last Access:</strong> {{ cqc_member.last_access|default:"Never" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Access Permissions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p>
+                            <strong>Can View Incidents:</strong> 
+                            <span class="badge badge-{% if cqc_member.can_view_incidents %}success{% else %}danger{% endif %}">
+                                {% if cqc_member.can_view_incidents %}Yes{% else %}No{% endif %}
+                            </span>
+                        </p>
+                        {% if cqc_member.can_view_incidents %}
+                        <p><strong>Incident View Delay:</strong> {{ cqc_member.incident_view_delay_hours }} hours</p>
+                        {% endif %}
+                        <p>
+                            <strong>Can View Audit Logs:</strong> 
+                            <span class="badge badge-{% if cqc_member.can_view_audit_logs %}success{% else %}danger{% endif %}">
+                                {% if cqc_member.can_view_audit_logs %}Yes{% else %}No{% endif %}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p>
+                            <strong>Can View Care Plans:</strong> 
+                            <span class="badge badge-{% if cqc_member.can_view_care_plans %}success{% else %}danger{% endif %}">
+                                {% if cqc_member.can_view_care_plans %}Yes{% else %}No{% endif %}
+                            </span>
+                        </p>
+                        <p>
+                            <strong>Can Download Reports:</strong> 
+                            <span class="badge badge-{% if cqc_member.can_download_reports %}success{% else %}danger{% endif %}">
+                                {% if cqc_member.can_download_reports %}Yes{% else %}No{% endif %}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'cqc_member_edit' cqc_member.pk %}" class="btn btn-primary">
+        <i class="fas fa-edit"></i> Edit CQC Member
+    </a>
+    <a href="{% url 'cqc_member_change_password' cqc_member.pk %}" class="btn btn-warning">
+        <i class="fas fa-key"></i> Change Password
+    </a>
+    <form method="post" action="{% url 'cqc_member_toggle_active' cqc_member.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-{% if cqc_member.is_active %}danger{% else %}success{% endif %}">
+            <i class="fas fa-{% if cqc_member.is_active %}times{% else %}check{% endif %}"></i>
+            {% if cqc_member.is_active %}Deactivate{% else %}Activate{% endif %} Account
+        </button>
+    </form>
+</div>
+
+<!-- Add this section to show group membership status -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>Group Membership</h5>
+    </div>
+    <div class="card-body">
+        <p>
+            <strong>CQC Group:</strong> 
+            {% if is_in_cqc_group %}
+            <span class="badge badge-success">Member</span>
+            {% else %}
+            <span class="badge badge-danger">Not a Member</span>
+            <a href="{% url 'cqc_member_add_to_group' cqc_member.pk %}" class="btn btn-sm btn-primary ml-2">
+                <i class="fas fa-users"></i> Add to CQC Group
+            </a>
+            {% endif %}
+        </p>
+        <p class="text-muted">CQC group membership grants access to the CQC portal and appropriate permissions.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Management Daily Note Detail</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h4 class="card-title">{{ note.title }}</h4>
+
+            <hr>
+
+            <dl class="row">
+
+                <!-- Priority -->
+                <dt class="col-sm-4">Priority</dt>
+                <dd class="col-sm-8">{{ note.get_priority_display }}</dd>
+
+                <!-- Note -->
+                <dt class="col-sm-4">Note</dt>
+                <dd class="col-sm-8">{{ note.note|linebreaksbr }}</dd>
+
+                <!-- Related Department -->
+                <dt class="col-sm-4">Related Department</dt>
+                <dd class="col-sm-8">
+                    {{ note.related_department.name }}
+                </dd>
+
+                <!-- Related Service User -->
+                {% if note.related_service_user %}
+                    <dt class="col-sm-4">Related Service User</dt>
+                    <dd class="col-sm-8">{{ note.related_service_user.full_name }}</dd>
+                {% endif %}
+
+                <!-- Related Staff -->
+                {% if note.related_staff %}
+                    <dt class="col-sm-4">Related Staff</dt>
+                    <dd class="col-sm-8">{{ note.related_staff.full_name }}</dd>
+                {% endif %}
+
+                <!-- Action Required -->
+                <dt class="col-sm-4">Action Required</dt>
+                <dd class="col-sm-8">
+                    {% if note.action_required %}
+                        <span class="badge bg-warning text-dark">Yes</span>
+                    {% else %}
+                        <span class="badge bg-secondary">No</span>
+                    {% endif %}
+                </dd>
+
+                <!-- Is Resolved -->
+                <dt class="col-sm-4">Resolved</dt>
+                <dd class="col-sm-8">
+                    {% if note.is_resolved %}
+                        <span class="badge bg-success">Yes</span>
+                        {% if note.resolved_at %}
+                            (on {{ note.resolved_at|date:"M d, Y H:i" }})
+                        {% endif %}
+                        {% if note.resolved_by %}
+                            by {{ note.resolved_by }}
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-danger">No</span>
+                    {% endif %}
+                </dd>
+
+                <!-- Action Details -->
+                {% if note.action_details %}
+                    <dt class="col-sm-4">Action Details</dt>
+                    <dd class="col-sm-8">{{ note.action_details|linebreaksbr }}</dd>
+                {% endif %}
+
+                <!-- Action Deadline -->
+                {% if note.action_deadline %}
+                    <dt class="col-sm-4">Action Deadline</dt>
+                    <dd class="col-sm-8">{{ note.action_deadline|date:"M d, Y" }}</dd>
+                {% endif %}
+
+                <!-- Resolution Notes -->
+                {% if note.resolution_notes %}
+                    <dt class="col-sm-4">Resolution Notes</dt>
+                    <dd class="col-sm-8">{{ note.resolution_notes|linebreaksbr }}</dd>
+                {% endif %}
+
+                <!-- Created Info -->
+                <dt class="col-sm-4">Created At</dt>
+                <dd class="col-sm-8">{{ note.created_at|date:"M d, Y H:i" }}</dd>
+
+                <dt class="col-sm-4">Created By</dt>
+                <dd class="col-sm-8">{{ note.created_by.get_full_name }}</dd>
+
+                <!-- Updated Info -->
+                <dt class="col-sm-4">Last Updated</dt>
+                <dd class="col-sm-8">{{ note.updated_at|date:"M d, Y H:i" }}</dd>
+
+                <dt class="col-sm-4">Last Updated By</dt>
+                <dd class="col-sm-8">{{ note.updated_by.get_full_name }}</dd>
+
+            </dl>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="mt-4 d-flex justify-content-between">
+        <a href="{% url 'managementdailynote_list' %}" class="btn btn-secondary">← Back to List</a>
+            <a href="{% url 'managementdailynote_update' note.pk %}" class="btn btn-primary">✏️ Edit Note</a>
+    </div>
+</div>
+{% endblock %}

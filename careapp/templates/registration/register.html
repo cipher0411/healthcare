@@ -1,0 +1,467 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="page-title"><i class="fas fa-user-plus"></i> Staff Registration</div>
+
+<div class="activity-list">
+    <div class="alert alert-info" style="margin-bottom: 1.5rem;">
+        <i class="fas fa-info-circle"></i> 
+        Only management can register new staff accounts. If you need access, please contact your administrator.
+    </div>
+
+    <form method="post" id="registrationForm" class="form-container">
+        {% csrf_token %}
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="id_username" class="form-label">
+                    <i class="fas fa-user"></i> Username *
+                </label>
+                <input type="text" name="username" maxlength="150" autocapitalize="none" 
+                       autocomplete="username" class="form-control" required id="id_username"
+                       placeholder="Choose a username">
+                <div class="form-help">
+                    Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="id_email" class="form-label">
+                    <i class="fas fa-envelope"></i> Email *
+                </label>
+                <input type="email" name="email" class="form-control" required id="id_email"
+                       placeholder="Enter email address">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="id_first_name" class="form-label">
+                    <i class="fas fa-signature"></i> First Name *
+                </label>
+                <input type="text" name="first_name" maxlength="30" class="form-control" 
+                       required id="id_first_name" placeholder="Enter first name">
+            </div>
+            
+            <div class="form-group">
+                <label for="id_last_name" class="form-label">
+                    <i class="fas fa-signature"></i> Last Name *
+                </label>
+                <input type="text" name="last_name" maxlength="30" class="form-control" 
+                       required id="id_last_name" placeholder="Enter last name">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="id_password1" class="form-label">
+                    <i class="fas fa-lock"></i> Password *
+                </label>
+                <div class="password-input-group">
+                    <input type="password" name="password1" autocomplete="new-password" 
+                           class="form-control" required id="id_password1" placeholder="Enter password">
+                    <button type="button" class="password-toggle" id="togglePassword1">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="form-help" id="passwordStrength">
+                    Your password must contain at least 8 characters, including uppercase, lowercase letters and numbers.
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="id_password2" class="form-label">
+                    <i class="fas fa-lock"></i> Confirm Password *
+                </label>
+                <div class="password-input-group">
+                    <input type="password" name="password2" autocomplete="new-password" 
+                           class="form-control" required id="id_password2" placeholder="Confirm password">
+                    <button type="button" class="password-toggle" id="togglePassword2">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="form-help" id="passwordMatch" style="display: none;">
+                    <i class="fas fa-check" style="color: green;"></i> Passwords match
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group checkbox-group">
+            <input type="checkbox" required id="termsAgreement">
+            <label for="termsAgreement" class="checkbox-label">
+                I agree to the <a href="#" id="termsLink" class="link">terms and conditions</a>
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                <i class="fas fa-user-plus"></i> Register Staff Member
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Terms and Conditions Modal -->
+<div class="modal" id="termsModal">
+    <div class="modal-content">
+        <button class="close-modal" id="closeTermsModal">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 class="modal-title">Terms and Conditions</h2>
+        
+        <div class="modal-body">
+            <div class="terms-content">
+                <h4><i class="fas fa-shield-alt"></i> Data Protection and Privacy</h4>
+                <p>All staff members must adhere to data protection regulations when handling service user information. 
+                Unauthorized access or sharing of sensitive information is strictly prohibited.</p>
+                
+                <h4><i class="fas fa-desktop"></i> System Usage</h4>
+                <p>The care home management system should only be used for authorized purposes related to patient care 
+                and administrative functions.</p>
+                
+                <h4><i class="fas fa-key"></i> Security Responsibilities</h4>
+                <p>Users are responsible for maintaining the confidentiality of their login credentials and must 
+                immediately report any suspected security breaches.</p>
+                
+                <h4><i class="fas fa-user-clock"></i> Account Management</h4>
+                <p>Accounts are provided for individual use only. Sharing credentials or allowing unauthorized access 
+                to the system is prohibited.</p>
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="closeTermsBtn">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text-color);
+    }
+
+    .form-label i {
+        margin-right: 0.5rem;
+        color: var(--primary-color);
+        width: 16px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(168, 203, 183, 0.1);
+    }
+
+    .form-help {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 0.25rem;
+        line-height: 1.4;
+    }
+
+    .password-input-group {
+        position: relative;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 4px;
+        transition: var(--transition);
+    }
+
+    .password-toggle:hover {
+        color: var(--primary-color);
+        background: #f1f1f1;
+    }
+
+    .checkbox-group {
+        margin: 2rem 0;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        margin-right: 0.75rem;
+        width: 18px;
+        height: 18px;
+    }
+
+    .link {
+        color: var(--secondary-color);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .link:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+
+    .form-actions {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #eee;
+    }
+
+    .btn-large {
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 8px;
+    }
+
+    .terms-content {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 1rem;
+    }
+
+    .terms-content h4 {
+        color: var(--secondary-color);
+        margin: 1.5rem 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .terms-content h4:first-child {
+        margin-top: 0;
+    }
+
+    .terms-content p {
+        margin-bottom: 1rem;
+        line-height: 1.6;
+        color: #555;
+    }
+
+    /* Alert styles */
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .alert-info {
+        background-color: #e9f5ff;
+        border: 1px solid #b3d9ff;
+        color: #0066cc;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .form-container {
+            padding: 0 1rem;
+        }
+
+        .checkbox-group {
+            padding: 0.75rem;
+        }
+
+        .btn-large {
+            width: 100%;
+            padding: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-title {
+            font-size: 1.5rem;
+        }
+        
+        .form-control {
+            padding: 0.7rem 0.9rem;
+        }
+    }
+</style>
+
+<script>
+    // Toggle password visibility
+    function setupPasswordToggle(inputId, toggleId) {
+        const toggle = document.getElementById(toggleId);
+        const input = document.getElementById(inputId);
+        
+        toggle.addEventListener('click', function() {
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+            
+            const icon = this.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+    }
+
+    setupPasswordToggle('id_password1', 'togglePassword1');
+    setupPasswordToggle('id_password2', 'togglePassword2');
+
+    // Password strength indicator
+    const passwordInput = document.getElementById('id_password1');
+    const confirmInput = document.getElementById('id_password2');
+    const strengthElement = document.getElementById('passwordStrength');
+    const matchElement = document.getElementById('passwordMatch');
+
+    passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        let strength = 0;
+        
+        // Check password strength
+        if (password.length >= 8) strength++;
+        if (password.match(/[a-z]+/)) strength++;
+        if (password.match(/[A-Z]+/)) strength++;
+        if (password.match(/[0-9]+/)) strength++;
+        if (password.match(/[!@#$%^&*(),.?":{}|<>]/)) strength++;
+        
+        // Update UI based on strength
+        let strengthText = '';
+        let strengthColor = '';
+        
+        if (strength > 3) {
+            strengthText = 'Strong password';
+            strengthColor = 'green';
+        } else if (strength > 2) {
+            strengthText = 'Medium password';
+            strengthColor = 'orange';
+        } else if (password.length > 0) {
+            strengthText = 'Weak password';
+            strengthColor = 'red';
+        } else {
+            strengthText = 'Your password must contain at least 8 characters, including uppercase, lowercase letters and numbers.';
+            strengthColor = '#666';
+        }
+        
+        strengthElement.innerHTML = `<span style="color: ${strengthColor}; font-weight: ${strength > 0 ? 'bold' : 'normal'};">
+            <i class="fas ${strength > 3 ? 'fa-check-circle' : strength > 2 ? 'fa-exclamation-circle' : strength > 0 ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+            ${strengthText}
+        </span>`;
+    });
+
+    // Password match indicator
+    confirmInput.addEventListener('input', function() {
+        const password1 = passwordInput.value;
+        const password2 = this.value;
+        
+        if (password2.length > 0) {
+            if (password1 === password2) {
+                matchElement.style.display = 'block';
+                matchElement.innerHTML = '<i class="fas fa-check-circle" style="color: green;"></i> Passwords match';
+                confirmInput.style.borderColor = 'green';
+            } else {
+                matchElement.style.display = 'block';
+                matchElement.innerHTML = '<i class="fas fa-times-circle" style="color: red;"></i> Passwords do not match';
+                confirmInput.style.borderColor = 'red';
+            }
+        } else {
+            matchElement.style.display = 'none';
+            confirmInput.style.borderColor = '#e1e5e9';
+        }
+    });
+
+    // Form validation
+    document.getElementById('registrationForm').addEventListener('submit', function(e) {
+        const password1 = passwordInput.value;
+        const password2 = confirmInput.value;
+        const termsAgreed = document.getElementById('termsAgreement').checked;
+        
+        if (password1 !== password2) {
+            e.preventDefault();
+            alert('Passwords do not match. Please check and try again.');
+            passwordInput.focus();
+            return false;
+        }
+        
+        if (!termsAgreed) {
+            e.preventDefault();
+            alert('You must agree to the terms and conditions to register.');
+            return false;
+        }
+    });
+
+    // Terms modal functionality
+    const termsLink = document.getElementById('termsLink');
+    const termsModal = document.getElementById('termsModal');
+    const closeTermsModal = document.getElementById('closeTermsModal');
+    const closeTermsBtn = document.getElementById('closeTermsBtn');
+
+    termsLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        termsModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+
+    [closeTermsModal, closeTermsBtn].forEach(btn => {
+        btn.addEventListener('click', function() {
+            termsModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(e) {
+        if (e.target === termsModal) {
+            termsModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    });
+
+    // Auto-focus on first input
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('id_username').focus();
+    });
+</script>
+{% endblock %}

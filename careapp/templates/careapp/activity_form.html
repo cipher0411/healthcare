@@ -1,0 +1,181 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">
+        <i class="fas fa-{% if object %}edit{% else %}plus{% endif %}"></i>
+        {% if object %}Edit{% else %}Create{% endif %} Activity
+    </h2>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" onclick="location.href='{% url 'activity_list' %}'">
+            <i class="fas fa-arrow-left"></i> Cancel
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form.service_user|as_crispy_field }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.activity_type|as_crispy_field }}
+                </div>
+            </div>
+            
+            {{ form.title|as_crispy_field }}
+            {{ form.description|as_crispy_field }}
+            
+            <div class="row">
+                <div class="col-md-4">
+                    {{ form.date|as_crispy_field }}
+                </div>
+                <div class="col-md-4">
+                    {{ form.start_time|as_crispy_field }}
+                </div>
+                <div class="col-md-4">
+                    {{ form.end_time|as_crispy_field }}
+                </div>
+            </div>
+            
+            {{ form.location|as_crispy_field }}
+            {{ form.staff_involved|as_crispy_field }}
+            
+            <!-- Meal-specific fields -->
+            <div id="meal-fields" style="display: none;">
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ form.meal_type|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.fluid_intake|as_crispy_field }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ form.appetite_level|as_crispy_field }}
+                    </div>
+                </div>
+                {{ form.food_consumed|as_crispy_field }}
+            </div>
+            
+            <!-- Appointment-specific fields -->
+            <div id="appointment-fields" style="display: none;">
+                {{ form.provider|as_crispy_field }}
+            </div>
+            
+            {{ form.notes|as_crispy_field }}
+            {{ form.is_completed|as_crispy_field }}
+            
+            <!-- Photo upload -->
+            <div class="form-group">
+                <label>Activity Photos</label>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="activityPhotos" name="photos" multiple accept="image/*">
+                    <label class="custom-file-label" for="activityPhotos">Choose photos...</label>
+                </div>
+                <small class="form-text text-muted">You can select multiple photos to upload.</small>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {% if object %}Update{% else %}Create{% endif %} Activity
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="location.href='{% url 'activity_list' %}'">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .form-actions {
+        text-align: center;
+    }
+    
+    .form-actions .btn {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/hide meal-specific fields based on activity type
+    function toggleActivitySpecificFields() {
+        const activityType = document.getElementById('id_activity_type').value;
+        const mealFields = document.getElementById('meal-fields');
+        const appointmentFields = document.getElementById('appointment-fields');
+        
+        // Hide all fields first
+        mealFields.style.display = 'none';
+        appointmentFields.style.display = 'none';
+        
+        // Show relevant fields based on activity type
+        if (activityType === 'meal') {
+            mealFields.style.display = 'block';
+        } else if (['medical', 'dental', 'therapy'].includes(activityType)) {
+            appointmentFields.style.display = 'block';
+        }
+    }
+    
+    // Initial toggle
+    toggleActivitySpecificFields();
+    
+    // Add event listener for activity type change
+    document.getElementById('id_activity_type').addEventListener('change', toggleActivitySpecificFields);
+    
+    // Custom file input styling
+    document.querySelector('.custom-file-input').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name || 'Choose photos...';
+        const label = document.querySelector('.custom-file-label');
+        
+        if (e.target.files.length > 1) {
+            label.textContent = `${e.target.files.length} files selected`;
+        } else {
+            label.textContent = fileName;
+        }
+    });
+    
+    // Set default time values if not set
+    const startTimeField = document.getElementById('id_start_time');
+    const endTimeField = document.getElementById('id_end_time');
+    
+    if (!startTimeField.value) {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        startTimeField.value = `${hours}:${minutes}`;
+    }
+    
+    if (!endTimeField.value && startTimeField.value) {
+        const [hours, minutes] = startTimeField.value.split(':');
+        const endTime = new Date();
+        endTime.setHours(parseInt(hours) + 1);
+        endTime.setMinutes(parseInt(minutes));
+        endTimeField.value = `${endTime.getHours().toString().padStart(2, '0')}:${endTime.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    // Set default date to today if not set
+    const dateField = document.getElementById('id_date');
+    if (!dateField.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateField.value = today;
+    }
+});
+</script>
+{% endblock %}

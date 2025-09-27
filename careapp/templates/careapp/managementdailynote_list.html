@@ -1,0 +1,502 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title"><i class="fas fa-sticky-note"></i> Management Daily Notes</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary" onclick="location.href='{% url 'managementdailynote_create' %}'">
+            <i class="fas fa-plus"></i> New Note
+        </button>
+        <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#filterModal">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+        <div class="view-toggle btn-group ml-2">
+            <button class="btn btn-outline-secondary {% if request.GET.view != 'table' %}active{% endif %}" id="cardViewBtn" onclick="toggleView('cards')">
+                <i class="fas fa-th-large"></i> Cards
+            </button>
+            <button class="btn btn-outline-secondary {% if request.GET.view == 'table' %}active{% endif %}" id="tableViewBtn" onclick="toggleView('table')">
+                <i class="fas fa-table"></i> Table
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Card View -->
+<div id="cardView" class="{% if request.GET.view == 'table' %}d-none{% endif %}">
+    <div class="row" id="managementNotesCards">
+        {% for note in managementdailynotes %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card management-note-card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">{{ note.title }}</h5>
+                        <span class="badge badge-{{ note.priority }}">
+                            {{ note.get_priority_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="note-content">
+                        <p class="card-text">{{ note.note|truncatewords:30 }}</p>
+                    </div>
+                    
+                    <div class="note-details">
+                        <div class="detail-item">
+                            <i class="fas fa-building mr-2"></i>
+                            <span>
+                                {% if note.related_department %}
+                                {{ note.related_department.name }}
+                                {% else %}
+                                <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <i class="fas fa-tasks mr-2"></i>
+                            <span>
+                                {% if note.action_required %}
+                                <span class="badge badge-warning">Action Required</span>
+                                {% else %}
+                                <span class="badge badge-secondary">No Action Required</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <span>
+                                {% if note.is_resolved %}
+                                <span class="badge badge-success">Resolved</span>
+                                {% else %}
+                                <span class="badge badge-warning">Open</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <i class="fas fa-calendar mr-2"></i>
+                            <span>{{ note.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        
+                        {% if note.due_date %}
+                        <div class="detail-item">
+                            <i class="fas fa-clock mr-2"></i>
+                            <span>Due: {{ note.due_date|date:"M d, Y" }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if note.assigned_to %}
+                        <div class="detail-item">
+                            <i class="fas fa-user mr-2"></i>
+                            <span>Assigned to: {{ note.assigned_to.user.get_full_name }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-sm btn-outline-primary" onclick="location.href='{% url 'managementdailynote_detail' note.pk %}'">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="location.href='{% url 'managementdailynote_update' note.pk %}'">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        {% if note.action_required and not note.is_resolved %}
+                        <form method="post" action="{% url 'managementdailynote_resolve' note.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-check"></i> Resolve
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle"></i> No management notes found.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Table View -->
+<div id="tableView" class="{% if request.GET.view != 'table' %}d-none{% endif %}">
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Priority</th>
+                            <th>Department</th>
+                            <th>Action Required</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Due Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in managementdailynotes %}
+                        <tr>
+                            <td>
+                                <strong>{{ note.title }}</strong>
+                                <p class="text-muted small mb-0">{{ note.note|truncatewords:10 }}</p>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ note.priority }}">
+                                    {{ note.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if note.related_department %}
+                                {{ note.related_department.name }}
+                                {% else %}
+                                <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if note.action_required %}
+                                <span class="badge badge-warning">Yes</span>
+                                {% else %}
+                                <span class="badge badge-secondary">No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if note.is_resolved %}
+                                <span class="badge badge-success">Resolved</span>
+                                {% else %}
+                                <span class="badge badge-warning">Open</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ note.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                {% if note.due_date %}
+                                {{ note.due_date|date:"M d, Y" }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="location.href='{% url 'managementdailynote_detail' note.pk %}'">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="location.href='{% url 'managementdailynote_update' note.pk %}'">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% if note.action_required and not note.is_resolved %}
+                                    <form method="post" action="{% url 'managementdailynote_resolve' note.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No management notes found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+        {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Enhanced Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Filter Management Notes</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="get" id="filterForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="priority">Priority</label>
+                                <select class="form-control" id="priority" name="priority">
+                                    <option value="">All Priorities</option>
+                                    {% for priority in priorities %}
+                                    <option value="{{ priority.0 }}" {% if request.GET.priority == priority.0 %}selected{% endif %}>{{ priority.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="action_required">Action Required</label>
+                                <select class="form-control" id="action_required" name="action_required">
+                                    <option value="">All</option>
+                                    <option value="true" {% if request.GET.action_required == "true" %}selected{% endif %}>Action Required</option>
+                                    <option value="false" {% if request.GET.action_required == "false" %}selected{% endif %}>No Action Required</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="is_resolved">Status</label>
+                                <select class="form-control" id="is_resolved" name="is_resolved">
+                                    <option value="">All Statuses</option>
+                                    <option value="true" {% if request.GET.is_resolved == "true" %}selected{% endif %}>Resolved</option>
+                                    <option value="false" {% if request.GET.is_resolved == "false" %}selected{% endif %}>Open</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="department">Department</label>
+                                <select class="form-control" id="department" name="department">
+                                    <option value="">All Departments</option>
+                                    {% for department in departments %}
+                                    <option value="{{ department.id }}" {% if request.GET.department == department.id|stringformat:"s" %}selected{% endif %}>{{ department.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="assigned_to">Assigned To</label>
+                                <select class="form-control" id="assigned_to" name="assigned_to">
+                                    <option value="">All Staff</option>
+                                    {% for staff in all_staff %}
+                                    <option value="{{ staff.id }}" {% if request.GET.assigned_to == staff.id|stringformat:"s" %}selected{% endif %}>{{ staff.user.get_full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_from">Created From</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.GET.date_from }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_to">Created To</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request.GET.date_to }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="due_date">Due Date</label>
+                                <input type="date" class="form-control" id="due_date" name="due_date" value="{{ request.GET.due_date }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="search">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" value="{{ request.GET.search }}" placeholder="Search by title or note content">
+                    </div>
+                    
+                    <input type="hidden" name="view" id="viewType" value="{{ request.GET.view|default:'cards' }}">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">Clear All Filters</button>
+                <button type="button" class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.management-note-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid rgba(0,0,0,0.125);
+    border-radius: 0.5rem;
+}
+
+.management-note-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.note-details {
+    margin-top: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    color: #6c757d;
+}
+
+.detail-item i {
+    width: 16px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.btn-group .btn {
+    margin-right: 5px;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-low { background: #28a745; color: white; }
+.badge-medium { background: #ffc107; color: black; }
+.badge-high { background: #fd7e14; color: white; }
+.badge-urgent { background: #dc3545; color: white; }
+.badge-warning { background: #ffc107; color: black; }
+.badge-secondary { background: #6c757d; color: white; }
+.badge-success { background: #28a745; color: white; }
+
+.view-toggle .btn.active {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.card-title {
+    color: var(--secondary-color);
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .view-toggle {
+        align-self: flex-start;
+    }
+    
+    .management-note-card .card-footer .d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .management-note-card .card-footer .btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap components
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Set active state for view buttons
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view');
+    if (view === 'table') {
+        document.getElementById('cardViewBtn').classList.remove('active');
+        document.getElementById('tableViewBtn').classList.add('active');
+    } else {
+        document.getElementById('cardViewBtn').classList.add('active');
+        document.getElementById('tableViewBtn').classList.remove('active');
+    }
+    
+    // Set the view type in the filter form
+    document.getElementById('viewType').value = view || 'cards';
+});
+
+function toggleView(viewType) {
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('view', viewType);
+    
+    // Preserve other filter parameters
+    {% for key, value in request.GET.items %}
+    {% if key != 'view' and key != 'page' %}
+    urlParams.set('{{ key }}', '{{ value }}');
+    {% endif %}
+    {% endfor %}
+    
+    window.location.href = '?' + urlParams.toString();
+}
+
+function applyFilters() {
+    // Get the current view type
+    const viewType = document.getElementById('viewType').value;
+    
+    // Submit the form
+    document.getElementById('filterForm').submit();
+}
+
+function clearFilters() {
+    // Redirect to the list page with only the view parameter
+    const urlParams = new URLSearchParams();
+    urlParams.set('view', document.getElementById('viewType').value);
+    window.location.href = '?' + urlParams.toString();
+}
+</script>
+{% endblock %}

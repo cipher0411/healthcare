@@ -1,0 +1,131 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center" style="background-color: #A8CBB7;">
+                    <h5 class="m-0 font-weight-bold text-white">Medication Administration Records</h5>
+                    <a href="{% url 'medication_administration_create' %}" class="btn btn-light">
+                        <i class="fas fa-plus"></i> New Administration
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <select class="form-control" id="service-user-filter">
+                                <option value="">All Service Users</option>
+                                {% for user in service_users %}
+                                    <option value="{{ user.id }}" {% if request.GET.service_user == user.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ user.first_name }} {{ user.last_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="date" class="form-control" id="date-filter" value="{{ request.GET.date }}">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+                            <a href="{% url 'medication_administration_list' %}" class="btn btn-secondary">Clear</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Records Table -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Service User</th>
+                                    <th>Medication</th>
+                                    <th>Dose</th>
+                                    <th>Administered By</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for administration in object_list %}
+                                <tr>
+                                    <td>{{ administration.administered_date }} {{ administration.administered_time }}</td>
+                                    <td>{{ administration.medication.service_user }}</td>
+                                    <td>{{ administration.medication.name }}</td>
+                                    <td>{{ administration.dose_administered }} {{ administration.medication.dosage }}</td>
+                                    <td>{{ administration.administered_by.user.get_full_name }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if administration.status == 'given' %}success{% elif administration.status == 'refused' %}danger{% else %}warning{% endif %}">
+                                            {{ administration.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'medication_administration_detail' administration.pk %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">No medication administration records found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.service_user %}&service_user={{ request.GET.service_user }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.service_user %}&service_user={{ request.GET.service_user }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.service_user %}&service_user={{ request.GET.service_user }}{% endif %}{% if request.GET.date %}&date={{ request.GET.date }}{% endif %}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function applyFilters() {
+    const serviceUser = document.getElementById('service-user-filter').value;
+    const date = document.getElementById('date-filter').value;
+    
+    let url = '{% url "medication_administration_list" %}?';
+    
+    if (serviceUser) {
+        url += `service_user=${serviceUser}&`;
+    }
+    
+    if (date) {
+        url += `date=${date}&`;
+    }
+    
+    window.location.href = url;
+}
+</script>
+{% endblock %}

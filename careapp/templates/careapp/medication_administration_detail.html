@@ -1,0 +1,81 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header py-3" style="background-color: #A8CBB7;">
+                    <h5 class="m-0 font-weight-bold text-white">Medication Administration Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Administration Information</h6>
+                            <p><strong>Date:</strong> {{ administration.administered_date }}</p>
+                            <p><strong>Time:</strong> {{ administration.administered_time }}</p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge badge-{% if administration.status == 'given' %}success{% elif administration.status == 'refused' %}danger{% else %}warning{% endif %}">
+                                    {{ administration.get_status_display }}
+                                </span>
+                            </p>
+                            <p><strong>Dose Administered:</strong> {{ administration.dose_administered }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Personnel</h6>
+                            <p><strong>Administered By:</strong> {{ administration.administered_by.user.get_full_name }}</p>
+                            {% if administration.witness %}
+                            <p><strong>Witness:</strong> {{ administration.witness.user.get_full_name }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Medication Details</h6>
+                            <p><strong>Name:</strong> {{ administration.medication.name }}</p>
+                            <p><strong>Type:</strong> {{ administration.medication.get_medication_type_display }}</p>
+                            <p><strong>Dosage:</strong> {{ administration.medication.dosage }}</p>
+                            <p><strong>Frequency:</strong> {{ administration.medication.frequency }}</p>
+                            <p><strong>Controlled Drug:</strong> {{ administration.medication.is_controlled_drug|yesno:"Yes,No" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Service User Information</h6>
+                            <p><strong>Name:</strong> {{ administration.medication.service_user }}</p>
+                            <p><strong>Room:</strong> {{ administration.medication.service_user.room_number }}</p>
+                            <p><strong>Allergies:</strong> {{ administration.medication.service_user.allergies|default:"None" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if administration.notes %}
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6>Notes</h6>
+                            <p>{{ administration.notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if administration.refusal_reason %}
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6>Refusal Reason</h6>
+                            <p>{{ administration.refusal_reason }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <a href="{% url 'medication_administration_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to List
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

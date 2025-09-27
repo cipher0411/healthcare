@@ -1,0 +1,229 @@
+{% extends 'careapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="page-title">
+                    <i class="fas fa-user-tie"></i> Staff Member Details
+                </h1>
+                <div>
+                    <a href="{% url 'staffmember_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    {% if can_edit %}
+                    <a href="{% url 'staffmember_update' staff_member.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Staff Details Card -->
+            <div class="row">
+                <!-- Left Column - Personal Info -->
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Personal Information</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            {% if staff_member.photo %}
+                            <img src="{{ staff_member.photo.url }}" alt="{{ staff_member.get_full_name }}" class="rounded-circle mb-3" width="150" height="150">
+                            {% else %}
+                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px;">
+                                <i class="fas fa-user text-white fa-3x"></i>
+                            </div>
+                            {% endif %}
+                            
+                            <h4>{{ staff_member.get_full_name }}</h4>
+                            <p class="text-muted">{{ staff_member.position }}</p>
+                            
+                            <div class="d-flex justify-content-center mb-3">
+                                <span class="badge badge-{% if staff_member.is_active %}success{% else %}danger{% endif %}">
+                                    {% if staff_member.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="staff-info">
+                                <p><strong>Staff ID:</strong> {{ staff_member.staff_id }}</p>
+                                <p><strong>Username:</strong> <code>{{ staff_member.user.username }}</code></p>
+                                <p><strong>Email:</strong> {{ staff_member.user.email }}</p>
+                                <p><strong>Phone:</strong> {{ staff_member.phone_number }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Details -->
+                <div class="col-md-8">
+                    <!-- Employment Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Employment Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Department:</strong> {{ staff_member.department.name|default:"-" }}</p>
+                                    <p><strong>Role:</strong> 
+                                        {% if staff_member.role %}
+                                        <span class="badge badge-info">{{ staff_member.role.name }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Start Date:</strong> {{ staff_member.start_date }}</p>
+                                    <p><strong>End Date:</strong> {{ staff_member.end_date|default:"-" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Qualifications & Training -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Qualifications & Training</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if staff_member.qualifications %}
+                            <h6>Qualifications:</h6>
+                            <p>{{ staff_member.qualifications|linebreaks }}</p>
+                            {% endif %}
+                            
+                            {% if staff_member.training_records %}
+                            <h6>Training Records:</h6>
+                            <pre>{{ staff_member.training_records|pretty_json }}</pre>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- DBS Check -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">DBS Check</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>DBS Check Date:</strong> {{ staff_member.dbs_check_date|default:"-" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>DBS Reference:</strong> {{ staff_member.dbs_check_reference|default:"-" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emergency Contact -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Emergency Contact</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Name:</strong> {{ staff_member.emergency_contact_name|default:"-" }}</p>
+                                    <p><strong>Relationship:</strong> {{ staff_member.emergency_contact_relationship|default:"-" }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Phone:</strong> {{ staff_member.emergency_contact_phone|default:"-" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    {% if can_edit %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <a href="{% url 'staffmember_change_password' staff_member.pk %}" class="btn btn-warning">
+                                <i class="fas fa-key"></i> Change Password
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.staff-info p {
+    margin-bottom: 0.5rem;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+}
+
+.btn-group .btn {
+    margin-right: 10px;
+}
+
+pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+    .btn-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .btn-group .btn {
+        margin-right: 0;
+        width: 100%;
+    }
+    
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .d-flex.justify-content-between .btn {
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Simple JSON pretty print filter (if not already available)
+document.addEventListener('DOMContentLoaded', function() {
+    const preElements = document.querySelectorAll('pre');
+    preElements.forEach(pre => {
+        try {
+            const json = JSON.parse(pre.textContent);
+            pre.textContent = JSON.stringify(json, null, 2);
+        } catch (e) {
+            // Not JSON, leave as is
+        }
+    });
+});
+</script>
+{% endblock %}
