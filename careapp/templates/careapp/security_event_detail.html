@@ -1,0 +1,459 @@
+{% extends 'careapp/custom_admin_base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="page-title">
+                    <i class="fas fa-shield-alt"></i> Security Event Details
+                </h2>
+                <div class="btn-group">
+                    <a href="{% url 'security_dashboard' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <a href="{% url 'security_logs_search' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-search"></i> Search Logs
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted">Detailed information about security event #{{ event.id }}</p>
+        </div>
+    </div>
+
+    <!-- Event Details -->
+    <div class="row">
+        <!-- Main Event Information -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Event Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%">Event ID:</th>
+                                    <td>#{{ event.id }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Timestamp:</th>
+                                    <td>{{ event.timestamp }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Action:</th>
+                                    <td>
+                                        <span class="badge badge-light" style="color: #6c757d; background-color: #f8f9fa; border: 1px solid #dee2e6;">{{ event.action }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        <span class="badge" style="color: white; background-color: 
+                                            {% if event.status == 'Success' %}#28a745
+                                            {% elif event.status == 'Failed' %}#dc3545
+                                            {% else %}#ffc107{% endif %};">
+                                            {{ event.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>User:</th>
+                                    <td>
+                                        {% if event.user %}
+                                            {{ event.user.get_full_name|default:event.user.username }}
+                                            <small class="text-muted">({{ event.user.username }})</small>
+                                        {% else %}
+                                            <em>System / Anonymous</em>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%">IP Address:</th>
+                                    <td>
+                                        <code>{{ event.ip_address }}</code>
+                                        <a href="{% url 'ip_investigation' %}?ip={{ event.ip_address }}" class="btn btn-sm btn-outline-info ml-2">
+                                            <i class="fas fa-search"></i> Investigate
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Location:</th>
+                                    <td>
+                                        {% if event.details.location %}
+                                            {{ event.details.location.city|default:"Unknown City" }}, 
+                                            {{ event.details.location.country|default:"Unknown Country" }}
+                                            {% if event.details.location.latitude %}
+                                                <br><small class="text-muted">
+                                                    Lat: {{ event.details.location.latitude }}, 
+                                                    Lng: {{ event.details.location.longitude }}
+                                                </small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>User Agent:</th>
+                                    <td>
+                                        <small>{{ event.user_agent|truncatewords:10 }}</small>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Detailed Information</h6>
+                </div>
+                <div class="card-body">
+                    <h6>Browser & Device Information:</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>Browser:</strong><br>
+                            {{ event.details.browser|default:"Unknown" }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Operating System:</strong><br>
+                            {{ event.details.os|default:"Unknown" }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Device:</strong><br>
+                            {{ event.details.device|default:"Unknown" }}
+                        </div>
+                    </div>
+
+                    <h6>Additional Details:</h6>
+                    <div class="border rounded p-3 bg-light">
+                        <pre class="mb-0" style="max-height: 300px; overflow-y: auto;">{{ event.details|pprint }}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions & Related Events -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <form method="post" action="{% url 'block_ip_address' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="ip_address" value="{{ event.ip_address }}">
+                            <button type="submit" class="btn btn-danger btn-block" 
+                                    onclick="return confirm('Are you sure you want to block IP {{ event.ip_address }}?')">
+                                <i class="fas fa-ban"></i> Block IP Address
+                            </button>
+                        </form>
+                        <a href="{% url 'ip_investigation' %}?ip={{ event.ip_address }}" class="btn btn-warning btn-block">
+                            <i class="fas fa-search"></i> Investigate This IP
+                        </a>
+                        {% if event.user %}
+                        <a href="#" class="btn btn-info btn-block">
+                            <i class="fas fa-user-cog"></i> User Security Review
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Events from Same IP -->
+            {% if related_events_page_obj %}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Recent Events from Same IP</h6>
+                    <span class="badge badge-primary">{{ related_events_page_obj.paginator.count }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for related_event in related_events_page_obj %}
+                        <a href="{% url 'security_event_detail' related_event.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1" style="color: #495057;">{{ related_event.action }}</h6>
+                                    <small class="text-muted">
+                                        {{ related_event.user.username|default:"System" }} • 
+                                        {{ related_event.timestamp|timesince }} ago
+                                    </small>
+                                </div>
+                                <span class="badge" style="color: white; background-color: 
+                                    {% if related_event.status == 'Success' %}#28a745
+                                    {% elif related_event.status == 'Failed' %}#dc3545
+                                    {% else %}#ffc107{% endif %};">
+                                    {{ related_event.status }}
+                                </span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Pagination for Related Events -->
+                    {% if related_events_page_obj.has_other_pages %}
+                    <div class="card-footer">
+                        <nav aria-label="Related events pagination">
+                            <ul class="pagination pagination-sm justify-content-center mb-0">
+                                {% if related_events_page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?related_page=1{% if request.GET.user_events_page %}&user_events_page={{ request.GET.user_events_page }}{% endif %}">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?related_page={{ related_events_page_obj.previous_page_number }}{% if request.GET.user_events_page %}&user_events_page={{ request.GET.user_events_page }}{% endif %}">Previous</a>
+                                </li>
+                                {% endif %}
+
+                                {% for num in related_events_page_obj.paginator.page_range %}
+                                    {% if related_events_page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                    {% elif num > related_events_page_obj.number|add:'-3' and num < related_events_page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?related_page={{ num }}{% if request.GET.user_events_page %}&user_events_page={{ request.GET.user_events_page }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if related_events_page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?related_page={{ related_events_page_obj.next_page_number }}{% if request.GET.user_events_page %}&user_events_page={{ request.GET.user_events_page }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?related_page={{ related_events_page_obj.paginator.num_pages }}{% if request.GET.user_events_page %}&user_events_page={{ request.GET.user_events_page }}{% endif %}">Last</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                Page {{ related_events_page_obj.number }} of {{ related_events_page_obj.paginator.num_pages }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- User Related Events -->
+            {% if user_events_page_obj and event.user %}
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Recent User Events</h6>
+                    <span class="badge badge-info">{{ user_events_page_obj.paginator.count }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for user_event in user_events_page_obj %}
+                        <a href="{% url 'security_event_detail' user_event.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1" style="color: #495057;">{{ user_event.action }}</h6>
+                                    <small class="text-muted">
+                                        {{ user_event.timestamp|timesince }} ago • 
+                                        {{ user_event.ip_address }}
+                                    </small>
+                                </div>
+                                <span class="badge" style="color: white; background-color: 
+                                    {% if user_event.status == 'Success' %}#28a745
+                                    {% elif user_event.status == 'Failed' %}#dc3545
+                                    {% else %}#ffc107{% endif %};">
+                                    {{ user_event.status }}
+                                </span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Pagination for User Events -->
+                    {% if user_events_page_obj.has_other_pages %}
+                    <div class="card-footer">
+                        <nav aria-label="User events pagination">
+                            <ul class="pagination pagination-sm justify-content-center mb-0">
+                                {% if user_events_page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?user_events_page=1{% if request.GET.related_page %}&related_page={{ request.GET.related_page }}{% endif %}">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?user_events_page={{ user_events_page_obj.previous_page_number }}{% if request.GET.related_page %}&related_page={{ request.GET.related_page }}{% endif %}">Previous</a>
+                                </li>
+                                {% endif %}
+
+                                {% for num in user_events_page_obj.paginator.page_range %}
+                                    {% if user_events_page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                    {% elif num > user_events_page_obj.number|add:'-3' and num < user_events_page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?user_events_page={{ num }}{% if request.GET.related_page %}&related_page={{ request.GET.related_page }}{% endif %}">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if user_events_page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?user_events_page={{ user_events_page_obj.next_page_number }}{% if request.GET.related_page %}&related_page={{ request.GET.related_page }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?user_events_page={{ user_events_page_obj.paginator.num_pages }}{% if request.GET.related_page %}&related_page={{ request.GET.related_page }}{% endif %}">Last</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                Page {{ user_events_page_obj.number }} of {{ user_events_page_obj.paginator.num_pages }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Security Assessment -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Security Assessment</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-{% if event.status == 'Suspicious' or event.status == 'Failed' %}exclamation-triangle text-warning{% else %}check-circle text-success{% endif %} fa-3x"></i>
+                            </div>
+                            <h5>Risk Level</h5>
+                            <span class="badge badge-{% if event.status == 'Suspicious' %}warning{% elif event.status == 'Failed' %}danger{% else %}success{% endif %} badge-pill p-2">
+                                {% if event.status == 'Suspicious' %}Medium
+                                {% elif event.status == 'Failed' %}High
+                                {% else %}Low{% endif %}
+                            </span>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-user-shield fa-3x text-info"></i>
+                            </div>
+                            <h5>User Type</h5>
+                            <span class="badge badge-info badge-pill p-2">
+                                {% if event.user %}
+                                    {% if event.user.is_staff %}Staff User
+                                    {% else %}Standard User{% endif %}
+                                {% else %}System{% endif %}
+                            </span>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-clock fa-3x text-primary"></i>
+                            </div>
+                            <h5>Time Context</h5>
+                            <span class="badge badge-primary badge-pill p-2">
+                                {{ event.timestamp|date:"H:i" }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mt-3">
+                        <h6>Recommendations:</h6>
+                        <ul class="list-group">
+                            {% if event.status == 'Suspicious' or event.status == 'Failed' %}
+                            <li class="list-group-item">
+                                <i class="fas fa-exclamation-circle text-warning"></i>
+                                Consider blocking IP address if pattern continues
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-user-check text-info"></i>
+                                Review user account for suspicious activity
+                            </li>
+                            {% if "login" in event.action.lower %}
+                            <li class="list-group-item">
+                                <i class="fas fa-key text-warning"></i>
+                                Monitor for brute force attack patterns
+                            </li>
+                            {% endif %}
+                            {% else %}
+                            <li class="list-group-item">
+                                <i class="fas fa-check-circle text-success"></i>
+                                This event appears to be normal activity
+                            </li>
+                            {% endif %}
+                            <li class="list-group-item">
+                                <i class="fas fa-history text-primary"></i>
+                                Continue monitoring related IP and user activity
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    padding: 1rem 1.5rem;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.list-group-item {
+    border: none;
+    padding: 0.75rem 1.25rem;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.pagination .page-link {
+    color: #4a7b5d;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #4a7b5d;
+    border-color: #4a7b5d;
+    color: white;
+}
+</style>
+{% endblock %}

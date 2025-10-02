@@ -1,0 +1,310 @@
+{% extends 'careapp/custom_admin_base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="page-title">
+                    <i class="fas fa-search"></i> Security Logs Search
+                </h2>
+                <a href="{% url 'security_dashboard' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            <p class="text-muted">Advanced search and filtering for security events</p>
+        </div>
+    </div>
+
+    <!-- Search Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Search Filters</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="q" class="form-label">Search Text</label>
+                            <input type="text" class="form-control" id="q" name="q" value="{{ query }}" 
+                                   placeholder="Search users, actions, details...">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="">All Status</option>
+                                {% for status in status_choices %}
+                                <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>
+                                    {{ status }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="action" class="form-label">Action</label>
+                            <select class="form-control" id="action" name="action">
+                                <option value="">All Actions</option>
+                                {% for action in action_choices %}
+                                <option value="{{ action }}" {% if action_filter == action %}selected{% endif %}>
+                                    {{ action }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ip_address" class="form-label">IP Address</label>
+                            <input type="text" class="form-control" id="ip_address" name="ip_address" 
+                                   value="{{ ip_address }}" placeholder="e.g., 192.168.1.1">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">Date Range</label>
+                            <div class="row g-2">
+                                <div class="col">
+                                    <input type="date" class="form-control" id="date_from" name="date_from" 
+                                           value="{{ date_from }}" placeholder="From date">
+                                </div>
+                                <div class="col">
+                                    <input type="date" class="form-control" id="date_to" name="date_to" 
+                                           value="{{ date_to }}" placeholder="To date">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <a href="{% url 'security_logs_search' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        Search Results 
+                        {% if query or status_filter or action_filter or ip_address or date_from or date_to %}
+                        <small class="text-muted">(Filtered)</small>
+                        {% endif %}
+                    </h6>
+                    <span class="badge" style="color: white; background-color: #007bff; font-size: 0.75em; font-weight: 500;">
+                        {{ page_obj.paginator.count }} events found
+                    </span>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Status</th>
+                                    <th>IP Address</th>
+                                    <th>Location</th>
+                                    <th>Details</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in page_obj %}
+                                <tr class="{% if log.status == 'Suspicious' %}table-warning{% elif log.status == 'Failed' %}table-danger{% endif %}">
+                                    <td>
+                                        <small>{{ log.timestamp|date:"M d, Y H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if log.user %}
+                                            {{ log.user.get_full_name|default:log.user.username }}
+                                        {% else %}
+                                            <em style="color: #6c757d;">System</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="color: #6c757d; background-color: #f8f9fa; border: 1px solid #dee2e6; font-weight: 500;">
+                                            {{ log.action }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="color: white; background-color: 
+                                            {% if log.status == 'Success' %}#28a745
+                                            {% elif log.status == 'Failed' %}#dc3545
+                                            {% else %}#ffc107{% endif %}; font-weight: 500;">
+                                            {{ log.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <code style="color: #e83e8c;">{{ log.ip_address }}</code>
+                                    </td>
+                                    <td>
+                                        {% with location=log.details.location %}
+                                            {% if location %}
+                                                <small style="color: #495057;">
+                                                    {{ location.city|default:"" }} {{ location.country|default:"" }}
+                                                </small>
+                                            {% else %}
+                                                <small class="text-muted">Unknown</small>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <small title="{{ log.details.browser|default:'' }}" style="color: #6c757d;">
+                                            {{ log.details.browser|default:""|truncatewords:3 }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'security_event_detail' log.id %}" class="btn btn-info" title="View Details" style="color: white; background-color: #17a2b8; border-color: #17a2b8;">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'ip_investigation' %}?ip={{ log.ip_address }}" class="btn btn-warning" title="Investigate IP" style="color: #212529; background-color: #ffc107; border-color: #ffc107;">
+                                                <i class="fas fa-search"></i>
+                                            </a>
+                                            <form method="post" action="{% url 'block_ip_address' %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="ip_address" value="{{ log.ip_address }}">
+                                                <button type="submit" class="btn btn-danger" 
+                                                        onclick="return confirm('Are you sure you want to block IP {{ log.ip_address }}?')"
+                                                        title="Block IP"
+                                                        style="color: white; background-color: #dc3545; border-color: #dc3545;">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Search results pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if ip_address %}ip_address={{ ip_address }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page=1" style="color: #4a7b5d;">
+                                    First
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if ip_address %}ip_address={{ ip_address }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page_obj.previous_page_number }}" style="color: #4a7b5d;">
+                                    Previous
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link" style="background-color: #4a7b5d; border-color: #4a7b5d; color: white;">{{ num }}</span>
+                                </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if ip_address %}ip_address={{ ip_address }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ num }}" style="color: #4a7b5d;">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if ip_address %}ip_address={{ ip_address }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page_obj.next_page_number }}" style="color: #4a7b5d;">
+                                    Next
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}{% if action_filter %}action={{ action_filter }}&{% endif %}{% if ip_address %}ip_address={{ ip_address }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}page={{ page_obj.paginator.num_pages }}" style="color: #4a7b5d;">
+                                    Last
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} • 
+                            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} events
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No security events found</h5>
+                        <p class="text-muted">Try adjusting your search criteria</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    padding: 1rem 1.5rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.pagination .page-link {
+    color: #4a7b5d;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #4a7b5d;
+    border-color: #4a7b5d;
+    color: white;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.075);
+}
+
+.table-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.table-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+</style>
+{% endblock %}

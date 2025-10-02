@@ -189,6 +189,12 @@ urlpatterns = [
     
     # Security Dashboard URL
     path('security-dashboard/', views.security_dashboard, name='security_dashboard'),
+    path('security-dashboard/data/', views.security_dashboard_data, name='security_dashboard_data'),
+    path('security-dashboard/report/', views.security_report, name='security_report'),
+    path('security-dashboard/block-ip/', views.block_ip_address, name='block_ip_address'),
+    path('security-logs/search/', views.security_logs_search, name='security_logs_search'),
+    path('security-event/<int:event_id>/', views.security_event_detail, name='security_event_detail'),
+    path('ip-investigation/', views.ip_investigation, name='ip_investigation'),
     
     # Report Generation URLs
     path('reports/daily-activities/', views.generate_report, {'report_type': 'daily_activities'}, name='report_daily_activities'),

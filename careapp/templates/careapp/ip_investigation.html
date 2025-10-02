@@ -1,0 +1,445 @@
+{% extends 'careapp/custom_admin_base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="page-title">
+                    <i class="fas fa-search-location"></i> IP Address Investigation
+                </h2>
+                <div class="btn-group">
+                    <a href="{% url 'security_dashboard' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <a href="{% url 'security_logs_search' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-search"></i> Search Logs
+                    </a>
+                </div>
+            </div>
+            <p class="text-muted">Detailed investigation for IP address: <code>{{ ip_address }}</code></p>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> {{ error }}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- IP Summary -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">IP Address Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%">IP Address:</th>
+                                    <td>
+                                        <code>{{ ip_address }}</code>
+                                        <form method="post" action="{% url 'block_ip_address' %}" style="display: inline;" class="ml-2">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="ip_address" value="{{ ip_address }}">
+                                            <button type="submit" class="btn btn-sm btn-danger" 
+                                                    onclick="return confirm('Are you sure you want to block IP {{ ip_address }}?')">
+                                                <i class="fas fa-ban"></i> Block IP
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Location:</th>
+                                    <td>
+                                        {% if location %}
+                                            {{ location.city|default:"Unknown City" }}, 
+                                            {{ location.country|default:"Unknown Country" }}
+                                            {% if location.latitude %}
+                                                <br><small class="text-muted">
+                                                    Coordinates: {{ location.latitude }}, {{ location.longitude }}
+                                                </small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Location data not available</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Total Events:</th>
+                                    <td>
+                                        <span class="badge badge-primary">{{ total_events }}</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th width="40%">First Seen:</th>
+                                    <td>
+                                        {% if first_seen %}
+                                            {{ first_seen|date:"M d, Y H:i" }}
+                                            <br><small class="text-muted">{{ first_seen|timesince }} ago</small>
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Last Seen:</th>
+                                    <td>
+                                        {% if last_seen %}
+                                            {{ last_seen|date:"M d, Y H:i" }}
+                                            <br><small class="text-muted">{{ last_seen|timesince }} ago</small>
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Unique Users:</th>
+                                    <td>
+                                        <span class="badge badge-info">{{ unique_users }}</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Summary -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Activity Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-chart-bar fa-3x text-primary"></i>
+                        </div>
+                        <h5>Events by Status</h5>
+                        {% for status_data in events_by_status %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge" style="color: white; background-color: 
+                                {% if status_data.status == 'Success' %}#28a745
+                                {% elif status_data.status == 'Failed' %}#dc3545
+                                {% else %}#ffc107{% endif %};">
+                                {{ status_data.status }}
+                            </span>
+                            <strong>{{ status_data.count }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Actions -->
+    {% if events_by_action %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Most Common Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for action_data in events_by_action %}
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title" style="color: #495057;">{{ action_data.action }}</h6>
+                                    <span class="badge badge-primary badge-pill">{{ action_data.count }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Events -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Recent Events from This IP</h6>
+                    <span class="badge badge-primary">{{ events_page_obj.paginator.count }} total events</span>
+                </div>
+                <div class="card-body">
+                    {% if events_page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Status</th>
+                                    <th>Details</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for event in events_page_obj %}
+                                <tr class="{% if event.status == 'Suspicious' %}table-warning{% elif event.status == 'Failed' %}table-danger{% endif %}">
+                                    <td>
+                                        <small>{{ event.timestamp|date:"M d, H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if event.user %}
+                                            {{ event.user.get_full_name|default:event.user.username }}
+                                        {% else %}
+                                            <em>System</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light" style="color: #6c757d; background-color: #f8f9fa; border: 1px solid #dee2e6;">{{ event.action }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="color: white; background-color: 
+                                            {% if event.status == 'Success' %}#28a745
+                                            {% elif event.status == 'Failed' %}#dc3545
+                                            {% else %}#ffc107{% endif %};">
+                                            {{ event.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>{{ event.details.browser|default:""|truncatewords:3 }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'security_event_detail' event.id %}" class="btn btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination for Events -->
+                    {% if events_page_obj.has_other_pages %}
+                    <nav aria-label="Events pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if events_page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?ip={{ ip_address }}&events_page=1">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?ip={{ ip_address }}&events_page={{ events_page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in events_page_obj.paginator.page_range %}
+                                {% if events_page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > events_page_obj.number|add:'-3' and num < events_page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?ip={{ ip_address }}&events_page={{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if events_page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?ip={{ ip_address }}&events_page={{ events_page_obj.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?ip={{ ip_address }}&events_page={{ events_page_obj.paginator.num_pages }}">Last</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            Page {{ events_page_obj.number }} of {{ events_page_obj.paginator.num_pages }} • 
+                            Showing {{ events_page_obj.start_index }} to {{ events_page_obj.end_index }} of {{ events_page_obj.paginator.count }} events
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No events found for this IP address</h5>
+                        <p class="text-muted">This IP address has no recorded security events.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Assessment -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Security Assessment</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-{% if total_events > 50 %}exclamation-triangle text-warning{% else %}check-circle text-success{% endif %} fa-3x"></i>
+                            </div>
+                            <h6>Activity Volume</h6>
+                            <span class="badge badge-{% if total_events > 100 %}danger{% elif total_events > 50 %}warning{% else %}success{% endif %} badge-pill p-2">
+                                {% if total_events > 100 %}High
+                                {% elif total_events > 50 %}Medium
+                                {% else %}Low{% endif %}
+                            </span>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-users fa-3x text-info"></i>
+                            </div>
+                            <h6>User Diversity</h6>
+                            <span class="badge badge-{% if unique_users > 5 %}warning{% elif unique_users > 1 %}info{% else %}secondary{% endif %} badge-pill p-2">
+                                {% if unique_users > 5 %}Multiple
+                                {% elif unique_users > 1 %}Few
+                                {% else %}Single{% endif %}
+                            </span>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-calendar fa-3x text-primary"></i>
+                            </div>
+                            <h6>Time Span</h6>
+                            <span class="badge badge-{% if first_seen and last_seen and last_seen|timesince:first_seen > '7 days' %}warning{% else %}primary{% endif %} badge-pill p-2">
+                                {% if first_seen and last_seen %}
+                                    {{ last_seen|timesince:first_seen }}
+                                {% else %}Unknown{% endif %}
+                            </span>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-shield-alt fa-3x text-{% if events_by_status.2.count > events_by_status.0.count %}warning{% else %}success{% endif %}"></i>
+                            </div>
+                            <h6>Threat Level</h6>
+                            <span class="badge badge-{% if events_by_status.2.count > events_by_status.0.count %}warning{% else %}success{% endif %} badge-pill p-2">
+                                {% if events_by_status.2.count > events_by_status.0.count %}Monitor
+                                {% else %}Normal{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mt-3">
+                        <h6>Recommendations:</h6>
+                        <ul class="list-group">
+                            {% if total_events > 100 %}
+                            <li class="list-group-item">
+                                <i class="fas fa-exclamation-circle text-warning"></i>
+                                High activity volume detected - consider blocking if suspicious
+                            </li>
+                            {% endif %}
+                            
+                            {% if unique_users > 3 %}
+                            <li class="list-group-item">
+                                <i class="fas fa-user-friends text-info"></i>
+                                Multiple users from same IP - may indicate shared network
+                            </li>
+                            {% endif %}
+
+                            {% for status_data in events_by_status %}
+                                {% if status_data.status == 'Failed' and status_data.count > 10 %}
+                                <li class="list-group-item">
+                                    <i class="fas fa-times-circle text-danger"></i>
+                                    High number of failed actions - potential security threat
+                                </li>
+                                {% endif %}
+                                
+                                {% if status_data.status == 'Suspicious' and status_data.count > 5 %}
+                                <li class="list-group-item">
+                                    <i class="fas fa-user-secret text-warning"></i>
+                                    Multiple suspicious activities - immediate attention recommended
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            <li class="list-group-item">
+                                <i class="fas fa-history text-primary"></i>
+                                Continue monitoring this IP address for unusual patterns
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    padding: 1rem 1.5rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.list-group-item {
+    border: none;
+    padding: 0.75rem 1.25rem;
+}
+
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+
+.pagination .page-link {
+    color: #4a7b5d;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #4a7b5d;
+    border-color: #4a7b5d;
+    color: white;
+}
+</style>
+{% endblock %}

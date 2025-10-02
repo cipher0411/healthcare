@@ -1,64 +1,280 @@
-{% extends 'careapp/base.html' %}
+{% extends 'careapp/custom_admin_base.html' %}
 {% load static %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <h2 class="page-title">
-                <i class="fas fa-shield-alt"></i> Security Dashboard
-            </h2>
-        </div>
-    </div>
-
+    <!-- Header -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-                    <h3>{{ failed_logins }}</h3>
-                    <p class="text-muted">Failed Logins (24h)</p>
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="page-title">
+                    <i class="fas fa-shield-alt"></i> Advanced Security Dashboard
+                </h2>
+                <div class="btn-group">
+                    <a href="{% url 'security_dashboard' %}?time_range={{ time_range }}" class="btn btn-outline-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </a>
+                    <button class="btn btn-outline-success" onclick="generateReport()">
+                        <i class="fas fa-file-export"></i> Export Report
+                    </button>
                 </div>
             </div>
+            <p class="text-muted">Real-time security monitoring and threat detection</p>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center">
+    </div>
+
+    <!-- Time Range Selector -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
                 <div class="card-body">
-                    <i class="fas fa-user-secret fa-3x text-danger mb-3"></i>
-                    <h3>{{ suspicious_activities }}</h3>
-                    <p class="text-muted">Suspicious Activities (24h)</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="fas fa-globe fa-3x text-info mb-3"></i>
-                    <h3>{{ unique_ips }}</h3>
-                    <p class="text-muted">Unique IPs (24h)</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="fas fa-list-alt fa-3x text-primary mb-3"></i>
-                    <h3>{{ security_logs|length }}</h3>
-                    <p class="text-muted">Recent Security Events</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">Time Range</h6>
+                        <div class="btn-group btn-group-sm">
+                            <a href="?time_range=24h{% if request.GET.logs_page %}&logs_page={{ request.GET.logs_page }}{% endif %}" class="btn btn-outline-primary {% if time_range == '24h' %}active{% endif %}">24 Hours</a>
+                            <a href="?time_range=7d{% if request.GET.logs_page %}&logs_page={{ request.GET.logs_page }}{% endif %}" class="btn btn-outline-primary {% if time_range == '7d' %}active{% endif %}">7 Days</a>
+                            <a href="?time_range=30d{% if request.GET.logs_page %}&logs_page={{ request.GET.logs_page }}{% endif %}" class="btn btn-outline-primary {% if time_range == '30d' %}active{% endif %}">30 Days</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                    <h3 id="failed-logins-count">{{ failed_logins }}</h3>
+                    <p class="text-muted mb-0">Failed Logins</p>
+                    <small class="text-muted">Last {{ time_range }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-secret fa-2x text-danger mb-2"></i>
+                    <h3 id="suspicious-count">{{ suspicious_activities }}</h3>
+                    <p class="text-muted mb-0">Suspicious Activities</p>
+                    <small class="text-muted">Last {{ time_range }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-globe fa-2x text-info mb-2"></i>
+                    <h3 id="unique-ips-count">{{ unique_ips }}</h3>
+                    <p class="text-muted mb-0">Unique IPs</p>
+                    <small class="text-muted">Last {{ time_range }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-hammer fa-2x text-danger mb-2"></i>
+                    <h3 id="brute-force-count">{{ brute_force_attempts }}</h3>
+                    <p class="text-muted mb-0">Brute Force Attempts</p>
+                    <small class="text-muted">Last {{ time_range }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-database fa-2x text-warning mb-2"></i>
+                    <h3 id="sql-injection-count">{{ sql_injection_attempts }}</h3>
+                    <p class="text-muted mb-0">SQL Injection Attempts</p>
+                    <small class="text-muted">Last {{ time_range }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card metric-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x text-success mb-2"></i>
+                    <h3 id="active-users-count">{{ active_users }}</h3>
+                    <p class="text-muted mb-0">Active Users</p>
+                    <small class="text-muted">Last {{ time_range }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Failed Login Trends -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Failed Login Trends ({{ time_range }})</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="failedLoginChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Security Events by Type -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Security Events Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="securityEventsChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Information Row -->
+    <div class="row">
+        <!-- Top Suspicious IPs -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Top Suspicious IPs</h6>
+                    <span class="badge badge-danger">{{ top_suspicious_ips|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for ip_data in top_suspicious_ips %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ ip_data.ip_address }}</h6>
+                                    <small class="text-muted">
+                                        {% if ip_data.location %}
+                                            {{ ip_data.location.city }}, {{ ip_data.location.country }}
+                                        {% else %}
+                                            Location unknown
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div class="text-right">
+                                    <span class="badge badge-danger">{{ ip_data.count }} events</span>
+                                    <br>
+                                    <small class="text-muted">{{ ip_data.last_activity|timesince }} ago</small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <form method="post" action="{% url 'block_ip_address' %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="ip_address" value="{{ ip_data.ip_address }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to block IP {{ ip_data.ip_address }}?')">
+                                        <i class="fas fa-ban"></i> Block IP
+                                    </button>
+                                </form>
+                                <a href="{% url 'ip_investigation' %}?ip={{ ip_data.ip_address }}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-search"></i> Investigate
+                                </a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item text-center text-muted">
+                            No suspicious IPs detected
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Staff Security Status -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">Staff Security Status</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for staff_data in staff_security_status %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ staff_data.staff.user.get_full_name }}</h6>
+                                    <small class="text-muted">{{ staff_data.staff.position }}</small>
+                                </div>
+                                <div class="text-right">
+                                    <span class="badge" style="color: white; background-color: {% if staff_data.status == 'Active' %}#28a745{% else %}#ffc107{% endif %};">
+                                        {{ staff_data.status }}
+                                    </span>
+                                    <br>
+                                    <small class="text-muted">
+                                        {% if staff_data.failed_attempts > 0 %}
+                                            {{ staff_data.failed_attempts }} failed attempts
+                                        {% else %}
+                                            No failed attempts
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            {% if staff_data.last_login %}
+                            <small class="text-muted">Last login: {{ staff_data.last_login|timesince }} ago</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent CQC Access -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">Recent CQC Access</h6>
+                    <span class="badge badge-info">{{ cqc_access_logs|length }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for access_log in cqc_access_logs %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ access_log.cqc_member.name }}</h6>
+                                    <small class="text-muted">{{ access_log.accessed_item_type }}</small>
+                                </div>
+                                <div class="text-right">
+                                    <small class="text-muted">{{ access_log.access_date|timesince }} ago</small>
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ access_log.accessed_item_title|truncatewords:5 }}</small>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item text-center text-muted">
+                            No CQC access logs
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Events Table -->
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Recent Security Events</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        Recent Security Events
+                        <small class="text-muted">(Showing {{ logs_page_obj.start_index }}-{{ logs_page_obj.end_index }} of {{ logs_page_obj.paginator.count }})</small>
+                    </h6>
+                    <div>
+                        <a href="{% url 'security_logs_search' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-search"></i> Advanced Search
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" id="securityEventsTable">
                             <thead>
                                 <tr>
                                     <th>Timestamp</th>
@@ -66,74 +282,114 @@
                                     <th>Action</th>
                                     <th>Status</th>
                                     <th>IP Address</th>
+                                    <th>Location</th>
                                     <th>Details</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for log in security_logs %}
-                                <tr>
-                                    <td>{{ log.timestamp }}</td>
-                                    <td>{{ log.user|default:"System" }}</td>
-                                    <td>{{ log.action }}</td>
+                                {% for log in logs_page_obj %}
+                                <tr class="{% if log.status == 'Suspicious' %}table-warning{% elif log.status == 'Failed' %}table-danger{% endif %}">
                                     <td>
-                                        <span class="badge badge-{% if log.status == 'Success' %}success{% elif log.status == 'Failed' %}danger{% else %}warning{% endif %}">
+                                        <small>{{ log.timestamp|date:"M d, H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if log.user %}
+                                            {{ log.user.get_full_name|default:log.user.username }}
+                                        {% else %}
+                                            <em>System</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="color: #6c757d; background-color: #f8f9fa; border: 1px solid #dee2e6; font-weight: 500;">
+                                            {{ log.action }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge" style="color: white; background-color: 
+                                            {% if log.status == 'Success' %}#28a745
+                                            {% elif log.status == 'Failed' %}#dc3545
+                                            {% else %}#ffc107{% endif %}; font-weight: 500;">
                                             {{ log.status }}
                                         </span>
                                     </td>
-                                    <td>{{ log.ip_address }}</td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#detailsModal{{ log.id }}">
-                                            <i class="fas fa-eye"></i> View
-                                        </button>
+                                        <code>{{ log.ip_address }}</code>
+                                    </td>
+                                    <td>
+                                        {% with location=log.details.location %}
+                                            {% if location %}
+                                                <small>{{ location.city|default:"" }} {{ location.country|default:"" }}</small>
+                                            {% else %}
+                                                <small class="text-muted">Unknown</small>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <small>{{ log.details.browser|default:"" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'security_event_detail' log.id %}" class="btn btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'ip_investigation' %}?ip={{ log.ip_address }}" class="btn btn-warning">
+                                                <i class="fas fa-search"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
-                                
-                                <!-- Details Modal -->
-                                <div class="modal fade" id="detailsModal{{ log.id }}" tabindex="-1" role="dialog" aria-labelledby="detailsModalLabel{{ log.id }}" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="detailsModalLabel{{ log.id }}">Security Event Details</h5>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                    <span aria-hidden="true">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <p><strong>Timestamp:</strong> {{ log.timestamp }}</p>
-                                                        <p><strong>User:</strong> {{ log.user|default:"System" }}</p>
-                                                        <p><strong>Action:</strong> {{ log.action }}</p>
-                                                        <p><strong>Status:</strong> {{ log.status }}</p>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <p><strong>IP Address:</strong> {{ log.ip_address }}</p>
-                                                        <p><strong>User Agent:</strong> {{ log.user_agent|truncatewords:5 }}</p>
-                                                    </div>
-                                                </div>
-                                                <div class="row mt-3">
-                                                    <div class="col-12">
-                                                        <p><strong>Details:</strong></p>
-                                                        <div class="border rounded p-3">
-                                                            <pre>{{ log.details|pprint }}</pre>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center">No security events found.</td>
+                                    <td colspan="8" class="text-center">No security events found.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Pagination for Security Events -->
+                    {% if logs_page_obj.has_other_pages %}
+                    <nav aria-label="Security events pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if logs_page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?time_range={{ time_range }}&logs_page=1">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?time_range={{ time_range }}&logs_page={{ logs_page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in logs_page_obj.paginator.page_range %}
+                                {% if logs_page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > logs_page_obj.number|add:'-3' and num < logs_page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?time_range={{ time_range }}&logs_page={{ num }}">{{ num }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if logs_page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?time_range={{ time_range }}&logs_page={{ logs_page_obj.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?time_range={{ time_range }}&logs_page={{ logs_page_obj.paginator.num_pages }}">Last</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            Page {{ logs_page_obj.number }} of {{ logs_page_obj.paginator.num_pages }} • 
+                            {{ logs_page_obj.paginator.count }} total events
+                        </small>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -141,52 +397,167 @@
 </div>
 
 <style>
-    .card {
-        border: none;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        margin-bottom: 1.5rem;
-    }
-    
-    .card-header {
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #eee;
-        padding: 1rem 1.5rem;
-    }
-    
-    .card-body {
-        padding: 1.5rem;
-    }
-    
-    .table th {
-        border-top: none;
-        font-weight: 600;
-        color: #4a7b5d;
-    }
-    
-    .badge {
-        font-size: 0.85em;
-        padding: 0.4em 0.6em;
-    }
-    
-    pre {
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    }
-    
-    @media (max-width: 768px) {
-        .card-body {
-            padding: 1rem;
-        }
-        
-        .table-responsive {
-            overflow-x: auto;
-        }
-    }
-</style>
+.metric-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
 
-<!-- Bootstrap JS for modals -->
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    padding: 1rem 1.5rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-size: 0.75em;
+    font-weight: 500;
+}
+
+.list-group-item {
+    border: none;
+    padding: 1rem 1.5rem;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.btn-group-sm > .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.pagination .page-link {
+    color: #4a7b5d;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #4a7b5d;
+    border-color: #4a7b5d;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Global variables
+let currentTimeRange = '{{ time_range }}';
+let failedLoginChart, securityEventsChart;
+
+// Initialize charts
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+});
+
+function initializeCharts() {
+    // Failed Login Trends Chart
+    const failedLoginCtx = document.getElementById('failedLoginChart').getContext('2d');
+    failedLoginChart = new Chart(failedLoginCtx, {
+        type: 'line',
+        data: {
+            labels: {{ failed_login_trends|safe }}.map(item => item.hour),
+            datasets: [{
+                label: 'Failed Logins',
+                data: {{ failed_login_trends|safe }}.map(item => item.count),
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Security Events Chart
+    const securityEventsCtx = document.getElementById('securityEventsChart').getContext('2d');
+    securityEventsChart = new Chart(securityEventsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Success', 'Failed', 'Suspicious'],
+            datasets: [{
+                data: [
+                    {{ logs_page_obj.paginator.count }} - {{ failed_logins }} - {{ suspicious_activities }},
+                    {{ failed_logins }},
+                    {{ suspicious_activities }}
+                ],
+                backgroundColor: [
+                    '#28a745',
+                    '#dc3545',
+                    '#ffc107'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            },
+            cutout: '60%'
+        }
+    });
+}
+
+function generateReport() {
+    const timeRange = '{{ time_range }}';
+    fetch(`/security-dashboard/report/?time_range=${timeRange}`)
+        .then(response => response.json())
+        .then(data => {
+            // Create and download report
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `security-report-${new Date().toISOString().split('T')[0]}-${timeRange}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error('Error generating report:', error);
+            alert('Error generating report. Please try again.');
+        });
+}
+</script>
 {% endblock %}

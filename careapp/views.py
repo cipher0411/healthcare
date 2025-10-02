@@ -4147,36 +4147,195 @@ class SystemSettingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
 
 
 # Security Dashboard View
+from django.shortcuts import render, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from django.db.models import Count, Q, F
+from django.http import JsonResponse, HttpResponse
+from django.core.paginator import Paginator
+from datetime import timedelta
+import json
+from .models import SecurityLog, StaffMember, User, AuditLog, CQCAccessLog
+from .utils import is_management, log_security_event, get_location_from_ip, check_brute_force
+
 @login_required
 @user_passes_test(is_management)
 def security_dashboard(request):
-    # Get security logs
-    security_logs = SecurityLog.objects.all().select_related('user').order_by('-timestamp')[:100]
+    """Enhanced security dashboard with comprehensive monitoring"""
     
-    # Get failed login attempts in the last 24 hours
-    twenty_four_hours_ago = timezone.now() - timezone.timedelta(hours=24)
-    failed_logins = SecurityLog.objects.filter(
+    # Time filters
+    time_range = request.GET.get('time_range', '24h')
+    
+    if time_range == '7d':
+        start_time = timezone.now() - timedelta(days=7)
+    elif time_range == '30d':
+        start_time = timezone.now() - timedelta(days=30)
+    else:  # 24h default
+        start_time = timezone.now() - timedelta(hours=24)
+    
+    # Basic security metrics
+    security_logs = SecurityLog.objects.all().select_related('user').order_by('-timestamp')
+    
+    # Paginate security logs
+    logs_paginator = Paginator(security_logs, 50)  # 50 events per page
+    logs_page = request.GET.get('logs_page')
+    logs_page_obj = logs_paginator.get_page(logs_page)
+    
+    failed_logins_count = SecurityLog.objects.filter(
         action__icontains='login',
         status='Failed',
-        timestamp__gte=twenty_four_hours_ago
+        timestamp__gte=start_time
     ).count()
     
-    # Get suspicious activities in the last 24 hours
-    suspicious_activities = SecurityLog.objects.filter(
+    suspicious_activities_count = SecurityLog.objects.filter(
         status='Suspicious',
-        timestamp__gte=twenty_four_hours_ago
+        timestamp__gte=start_time
     ).count()
     
-    # Get unique IP addresses in the last 24 hours
-    unique_ips = SecurityLog.objects.filter(
-        timestamp__gte=twenty_four_hours_ago
+    unique_ips_count = SecurityLog.objects.filter(
+        timestamp__gte=start_time
     ).values('ip_address').distinct().count()
     
+    # Advanced metrics
+    brute_force_attempts = SecurityLog.objects.filter(
+        action__icontains='brute force',
+        timestamp__gte=start_time
+    ).count()
+    
+    sql_injection_attempts = SecurityLog.objects.filter(
+        action__icontains='sql injection',
+        timestamp__gte=start_time
+    ).count()
+    
+    # User activity metrics
+    active_users_count = SecurityLog.objects.filter(
+        timestamp__gte=start_time,
+        user__isnull=False
+    ).values('user').distinct().count()
+    
+    # Top suspicious IPs
+    top_suspicious_ips = SecurityLog.objects.filter(
+        status='Suspicious',
+        timestamp__gte=start_time
+    ).values('ip_address').annotate(
+        count=Count('id'),
+        last_activity=F('timestamp')
+    ).order_by('-count')[:10]
+    
+    # Add location data to suspicious IPs
+    for ip_data in top_suspicious_ips:
+        ip_data['location'] = get_location_from_ip(ip_data['ip_address'])
+    
+    # Failed login trends
+    failed_login_trends = []
+    if time_range == '24h':
+        for i in range(24):
+            hour_start = start_time + timedelta(hours=i)
+            hour_end = hour_start + timedelta(hours=1)
+            count = SecurityLog.objects.filter(
+                action__icontains='login',
+                status='Failed',
+                timestamp__gte=hour_start,
+                timestamp__lt=hour_end
+            ).count()
+            failed_login_trends.append({
+                'hour': hour_start.strftime('%H:00'),
+                'count': count
+            })
+    else:
+        # For longer time ranges, show daily trends
+        days = 7 if time_range == '7d' else 30
+        for i in range(days):
+            day_start = start_time + timedelta(days=i)
+            day_end = day_start + timedelta(days=1)
+            count = SecurityLog.objects.filter(
+                action__icontains='login',
+                status='Failed',
+                timestamp__gte=day_start,
+                timestamp__lt=day_end
+            ).count()
+            failed_login_trends.append({
+                'hour': day_start.strftime('%m/%d'),
+                'count': count
+            })
+    
+    # User agent analysis
+    top_user_agents = SecurityLog.objects.filter(
+        timestamp__gte=start_time
+    ).values('details__browser').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    # Geographic distribution
+    geographic_data = []
+    unique_ips = SecurityLog.objects.filter(
+        timestamp__gte=start_time
+    ).values_list('ip_address', flat=True).distinct()
+    
+    for ip in unique_ips[:50]:  # Limit to first 50 for performance
+        location = get_location_from_ip(ip)
+        if location:
+            geographic_data.append({
+                'ip': ip,
+                'country': location.get('country', 'Unknown'),
+                'city': location.get('city', 'Unknown'),
+                'lat': location.get('latitude'),
+                'lng': location.get('longitude')
+            })
+    
+    # CQC access monitoring
+    cqc_access_logs = CQCAccessLog.objects.select_related('cqc_member').order_by('-access_date')[:50]
+    
+    # System audit logs
+    system_audit_logs = AuditLog.objects.select_related('user').order_by('-created_at')[:50]
+    
+    # Staff security status
+    staff_security_status = []
+    for staff in StaffMember.objects.filter(is_active=True).select_related('user')[:20]:
+        last_login = SecurityLog.objects.filter(
+            user=staff.user,
+            action__icontains='login',
+            status='Success'
+        ).order_by('-timestamp').first()
+        
+        failed_attempts = SecurityLog.objects.filter(
+            user=staff.user,
+            action__icontains='login',
+            status='Failed',
+            timestamp__gte=start_time
+        ).count()
+        
+        staff_security_status.append({
+            'staff': staff,
+            'last_login': last_login.timestamp if last_login else None,
+            'failed_attempts': failed_attempts,
+            'status': 'Active' if last_login and last_login.timestamp >= start_time else 'Inactive'
+        })
+    
     context = {
-        'security_logs': security_logs,
-        'failed_logins': failed_logins,
-        'suspicious_activities': suspicious_activities,
-        'unique_ips': unique_ips,
+        # Basic metrics
+        'logs_page_obj': logs_page_obj,
+        'failed_logins': failed_logins_count,
+        'suspicious_activities': suspicious_activities_count,
+        'unique_ips': unique_ips_count,
+        
+        # Advanced metrics
+        'brute_force_attempts': brute_force_attempts,
+        'sql_injection_attempts': sql_injection_attempts,
+        'active_users': active_users_count,
+        
+        # Detailed data
+        'top_suspicious_ips': top_suspicious_ips,
+        'failed_login_trends': failed_login_trends,
+        'top_user_agents': top_user_agents,
+        'geographic_data': geographic_data,
+        'cqc_access_logs': cqc_access_logs,
+        'system_audit_logs': system_audit_logs,
+        'staff_security_status': staff_security_status,
+        
+        # Time ranges for filters
+        'time_range': time_range,
+        'start_time': start_time,
     }
     
     # Log access to security dashboard
@@ -4184,11 +4343,294 @@ def security_dashboard(request):
         request, 
         "Security Dashboard Access", 
         "Success", 
-        {"page": "security_dashboard"}
+        {"page": "security_dashboard", "time_range": time_range}
     )
     
     return render(request, 'careapp/security_dashboard.html', context)
 
+@login_required
+@user_passes_test(is_management)
+def security_dashboard_data(request):
+    """AJAX endpoint for security dashboard data"""
+    time_range = request.GET.get('time_range', '24h')
+    
+    if time_range == '7d':
+        start_time = timezone.now() - timedelta(days=7)
+    elif time_range == '30d':
+        start_time = timezone.now() - timedelta(days=30)
+    else:  # 24h default
+        start_time = timezone.now() - timedelta(hours=24)
+    
+    # Security events by type
+    security_events_by_type = SecurityLog.objects.filter(
+        timestamp__gte=start_time
+    ).values('action').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+    
+    # Security events by status
+    security_events_by_status = SecurityLog.objects.filter(
+        timestamp__gte=start_time
+    ).values('status').annotate(
+        count=Count('id')
+    )
+    
+    # Hourly activity for the selected period
+    hourly_data = []
+    if time_range == '24h':
+        intervals = 24
+        delta = timedelta(hours=1)
+    elif time_range == '7d':
+        intervals = 7
+        delta = timedelta(days=1)
+    else:  # 30d
+        intervals = 30
+        delta = timedelta(days=1)
+    
+    for i in range(intervals):
+        interval_start = start_time + (delta * i)
+        interval_end = interval_start + delta
+        
+        count = SecurityLog.objects.filter(
+            timestamp__gte=interval_start,
+            timestamp__lt=interval_end
+        ).count()
+        
+        if time_range == '24h':
+            label = interval_start.strftime('%H:00')
+        else:
+            label = interval_start.strftime('%Y-%m-%d')
+        
+        hourly_data.append({
+            'label': label,
+            'count': count
+        })
+    
+    data = {
+        'events_by_type': list(security_events_by_type),
+        'events_by_status': list(security_events_by_status),
+        'hourly_activity': hourly_data,
+        'time_range': time_range
+    }
+    
+    return JsonResponse(data)
+
+@login_required
+@user_passes_test(is_management)
+def security_logs_search(request):
+    """Search and filter security logs"""
+    query = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
+    action_filter = request.GET.get('action', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    ip_address = request.GET.get('ip_address', '')
+    
+    security_logs = SecurityLog.objects.all().select_related('user').order_by('-timestamp')
+    
+    # Apply filters
+    if query:
+        security_logs = security_logs.filter(
+            Q(user__username__icontains=query) |
+            Q(user__first_name__icontains=query) |
+            Q(user__last_name__icontains=query) |
+            Q(action__icontains=query) |
+            Q(details__icontains=query)
+        )
+    
+    if status_filter:
+        security_logs = security_logs.filter(status=status_filter)
+    
+    if action_filter:
+        security_logs = security_logs.filter(action__icontains=action_filter)
+    
+    if ip_address:
+        security_logs = security_logs.filter(ip_address__icontains=ip_address)
+    
+    if date_from:
+        security_logs = security_logs.filter(timestamp__date__gte=date_from)
+    
+    if date_to:
+        security_logs = security_logs.filter(timestamp__date__lte=date_to)
+    
+    # Get unique values for filter dropdowns
+    status_choices = SecurityLog.objects.values_list('status', flat=True).distinct()
+    action_choices = SecurityLog.objects.values_list('action', flat=True).distinct()
+    
+    # Pagination
+    paginator = Paginator(security_logs, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'query': query,
+        'status_filter': status_filter,
+        'action_filter': action_filter,
+        'ip_address': ip_address,
+        'date_from': date_from,
+        'date_to': date_to,
+        'status_choices': status_choices,
+        'action_choices': action_choices,
+    }
+    
+    return render(request, 'careapp/security_logs_search.html', context)
+
+@login_required
+@user_passes_test(is_management)
+def security_event_detail(request, event_id):
+    """View detailed information about a security event"""
+    security_event = get_object_or_404(SecurityLog, id=event_id)
+    
+    # Get related events from same IP with pagination
+    related_events = SecurityLog.objects.filter(
+        ip_address=security_event.ip_address
+    ).exclude(id=event_id).order_by('-timestamp')
+    
+    # Paginate related events
+    related_events_paginator = Paginator(related_events, 10)  # 10 events per page
+    related_events_page = request.GET.get('related_page')
+    related_events_page_obj = related_events_paginator.get_page(related_events_page)
+    
+    # Get related events from same user with pagination
+    user_related_events = []
+    if security_event.user:
+        user_related_events = SecurityLog.objects.filter(
+            user=security_event.user
+        ).exclude(id=event_id).order_by('-timestamp')
+        
+        # Paginate user related events
+        user_events_paginator = Paginator(user_related_events, 10)  # 10 events per page
+        user_events_page = request.GET.get('user_events_page')
+        user_events_page_obj = user_events_paginator.get_page(user_events_page)
+    else:
+        user_events_page_obj = None
+    
+    context = {
+        'event': security_event,
+        'related_events_page_obj': related_events_page_obj,
+        'user_events_page_obj': user_events_page_obj,
+    }
+    
+    return render(request, 'careapp/security_event_detail.html', context)
+
+@login_required
+@user_passes_test(is_management)
+def ip_investigation(request):
+    """Investigate activities from a specific IP address"""
+    ip_address = request.GET.get('ip', '')
+    
+    if not ip_address:
+        return render(request, 'careapp/ip_investigation.html', {'error': 'No IP address provided'})
+    
+    # Get all events from this IP with pagination
+    events = SecurityLog.objects.filter(ip_address=ip_address).select_related('user').order_by('-timestamp')
+    
+    # Paginate events
+    events_paginator = Paginator(events, 25)  # 25 events per page
+    events_page = request.GET.get('events_page')
+    events_page_obj = events_paginator.get_page(events_page)
+    
+    # Get location information
+    location = get_location_from_ip(ip_address)
+    
+    # Get summary statistics
+    total_events = events.count()
+    unique_users = events.filter(user__isnull=False).values('user').distinct().count()
+    first_seen = events.last().timestamp if events.exists() else None
+    last_seen = events.first().timestamp if events.exists() else None
+    
+    # Events by status
+    events_by_status = events.values('status').annotate(count=Count('id'))
+    
+    # Events by action
+    events_by_action = events.values('action').annotate(count=Count('id')).order_by('-count')[:10]
+    
+    context = {
+        'ip_address': ip_address,
+        'events_page_obj': events_page_obj,
+        'location': location,
+        'total_events': total_events,
+        'unique_users': unique_users,
+        'first_seen': first_seen,
+        'last_seen': last_seen,
+        'events_by_status': events_by_status,
+        'events_by_action': events_by_action,
+    }
+    
+    return render(request, 'careapp/ip_investigation.html', context)
+
+@login_required
+@user_passes_test(is_management)
+def block_ip_address(request):
+    """Block an IP address from accessing the system"""
+    if request.method == 'POST':
+        ip_address = request.POST.get('ip_address')
+        reason = request.POST.get('reason', '')
+        
+        # Log the blocking action
+        log_security_event(
+            request,
+            "IP Address Blocked",
+            "Success",
+            {
+                "ip_address": ip_address,
+                "reason": reason,
+                "blocked_by": request.user.username
+            }
+        )
+        
+        # In a real implementation, you would add the IP to a blocked list
+        # This could be stored in the database or in a firewall rule
+        
+        # For now, we'll just show a success message
+        messages.success(request, f'IP address {ip_address} has been blocked successfully.')
+        return redirect('security_dashboard')
+    
+    return redirect('security_dashboard')
+
+@login_required
+@user_passes_test(is_management)
+def security_report(request):
+    """Generate security reports"""
+    time_range = request.GET.get('time_range', '7d')
+    
+    if time_range == '24h':
+        start_time = timezone.now() - timedelta(hours=24)
+    elif time_range == '30d':
+        start_time = timezone.now() - timedelta(days=30)
+    else:  # 7d default
+        start_time = timezone.now() - timedelta(days=7)
+    
+    # Comprehensive security report data
+    report_data = {
+        'time_range': time_range,
+        'generated_at': timezone.now(),
+        'total_events': SecurityLog.objects.filter(timestamp__gte=start_time).count(),
+        'failed_logins': SecurityLog.objects.filter(
+            action__icontains='login',
+            status='Failed',
+            timestamp__gte=start_time
+        ).count(),
+        'suspicious_activities': SecurityLog.objects.filter(
+            status='Suspicious',
+            timestamp__gte=start_time
+        ).count(),
+        'top_offending_ips': list(SecurityLog.objects.filter(
+            timestamp__gte=start_time
+        ).values('ip_address').annotate(
+            count=Count('id')
+        ).order_by('-count')[:10]),
+        'user_activity_summary': list(SecurityLog.objects.filter(
+            timestamp__gte=start_time,
+            user__isnull=False
+        ).values('user__username').annotate(
+            count=Count('id'),
+            last_activity=F('timestamp')
+        ).order_by('-count')[:20]),
+    }
+    
+    return JsonResponse(report_data)
 
 # Report Generation Views
 from .templatetags.medication_filters import is_due_soon

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CareHome Management System{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sidebar-bg: #1a1d29;
+            --sidebar-hover: #2d3349;
+            --sidebar-active: #4a7b5d;
+            --header-bg: #2d3349;
+            --content-bg: #f8f9fa;
+            --text-light: #e9ecef;
+            --text-muted: #6c757d;
+            --border-color: #344258;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--content-bg);
+            overflow-x: hidden;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            background: var(--sidebar-bg);
+            color: var(--text-light);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar.collapsed {
+            width: 70px;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo-icon {
+            font-size: 1.5rem;
+            color: #4a7b5d;
+        }
+        
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+        
+        .sidebar.collapsed .logo-text {
+            display: none;
+        }
+        
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-btn:hover {
+            background: var(--sidebar-hover);
+        }
+        
+        .sidebar-menu {
+            padding: 1rem 0;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+        
+        .menu-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .menu-title {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .sidebar.collapsed .menu-title {
+            display: none;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--text-light);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            gap: 0.75rem;
+        }
+        
+        .nav-link:hover {
+            background: var(--sidebar-hover);
+            color: var(--text-light);
+            border-left-color: var(--sidebar-active);
+        }
+        
+        .nav-link.active {
+            background: var(--sidebar-hover);
+            border-left-color: var(--sidebar-active);
+            color: white;
+        }
+        
+        .nav-link i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .nav-text {
+            flex: 1;
+        }
+        
+        .sidebar.collapsed .nav-text {
+            display: none;
+        }
+        
+        .badge-sidebar {
+            background: var(--sidebar-active);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+        }
+        
+        .sidebar.collapsed .badge-sidebar {
+            display: none;
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            margin-left: 280px;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        .main-content.expanded {
+            margin-left: 70px;
+        }
+        
+        /* Top Header */
+        .top-header {
+            background: white;
+            border-bottom: 1px solid #dee2e6;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3349;
+            margin: 0;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: #6c757d;
+            cursor: pointer;
+        }
+        
+        /* Content Area */
+        .content-wrapper {
+            padding: 1.5rem;
+        }
+        
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 280px;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .mobile-toggle {
+                display: block;
+            }
+            
+            .overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+                display: none;
+            }
+            
+            .overlay.active {
+                display: block;
+            }
+        }
+        
+        /* Scrollbar Styling */
+        .sidebar-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar-menu::-webkit-scrollbar-track {
+            background: var(--sidebar-bg);
+        }
+        
+        .sidebar-menu::-webkit-scrollbar-thumb {
+            background: var(--sidebar-hover);
+            border-radius: 3px;
+        }
+        
+        .sidebar-menu::-webkit-scrollbar-thumb:hover {
+            background: var(--sidebar-active);
+        }
+        
+        /* Card Styling */
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 1.25rem 1.5rem;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        
+        .card-title {
+            font-weight: 600;
+            color: #2d3349;
+            margin: 0;
+        }
+        
+        /* Badge Styling */
+        .badge {
+            font-weight: 500;
+            padding: 0.35em 0.65em;
+        }
+        
+        /* Button Styling */
+        .btn-primary {
+            background: #4a7b5d;
+            border-color: #4a7b5d;
+        }
+        
+        .btn-primary:hover {
+            background: #3a6650;
+            border-color: #3a6650;
+        }
+        
+        /* Table Styling */
+        .table th {
+            font-weight: 600;
+            color: #2d3349;
+            border-top: none;
+        }
+        
+        /* Animation */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Overlay for Mobile -->
+    <div class="overlay" id="overlay"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-shield-alt logo-icon"></i>
+                <span class="logo-text">CareHome Admin</span>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="sidebar-menu">
+            <!-- Dashboard Section -->
+            <div class="menu-section">
+                <div class="menu-title">Main</div>
+                <a href="{% url 'management_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'management_dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+            </div>
+            
+            <!-- Service Users Section -->
+            <div class="menu-section">
+                <div class="menu-title">Service Users</div>
+                <a href="{% url 'serviceuser_list' %}" class="nav-link {% if 'serviceuser' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-users"></i>
+                    <span class="nav-text">Service Users</span>
+                </a>
+                <a href="{% url 'careplan_list' %}" class="nav-link {% if 'careplan' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span class="nav-text">Care Plans</span>
+                </a>
+                <a href="{% url 'pbsplan_list' %}" class="nav-link {% if 'pbsplan' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-brain"></i>
+                    <span class="nav-text">PBS Plans</span>
+                </a>
+                <a href="{% url 'riskassessment_list' %}" class="nav-link {% if 'riskassessment' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span class="nav-text">Risk Assessments</span>
+                </a>
+            </div>
+            
+            <!-- Care Management Section -->
+            <div class="menu-section">
+                <div class="menu-title">Care Management</div>
+                <a href="{% url 'activity_list' %}" class="nav-link {% if 'activity' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-calendar-check"></i>
+                    <span class="nav-text">Activities</span>
+                </a>
+                <a href="{% url 'medication_dashboard' %}" class="nav-link {% if 'medication' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-pills"></i>
+                    <span class="nav-text">Medications</span>
+                </a>
+                <a href="{% url 'vitalsigns_list' %}" class="nav-link {% if 'vitalsigns' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-heartbeat"></i>
+                    <span class="nav-text">Vital Signs</span>
+                </a>
+                <a href="{% url 'appointment_list' %}" class="nav-link {% if 'appointment' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="nav-text">Appointments</span>
+                </a>
+            </div>
+            
+            <!-- Staff & Operations Section -->
+            <div class="menu-section">
+                <div class="menu-title">Staff & Operations</div>
+                <a href="{% url 'staff_member_list' %}" class="nav-link {% if 'staff_member' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-user-tie"></i>
+                    <span class="nav-text">Staff Members</span>
+                </a>
+                <a href="{% url 'staffshift_list' %}" class="nav-link {% if 'staffshift' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-clock"></i>
+                    <span class="nav-text">Staff Shifts</span>
+                </a>
+                <a href="{% url 'dailysummary_list' %}" class="nav-link {% if 'dailysummary' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-clipboard"></i>
+                    <span class="nav-text">Daily Summaries</span>
+                </a>
+                <a href="{% url 'department_list' %}" class="nav-link {% if 'department' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-sitemap"></i>
+                    <span class="nav-text">Departments</span>
+                </a>
+            </div>
+            
+            <!-- Security & Governance Section -->
+            <div class="menu-section">
+                <div class="menu-title">Security & Governance</div>
+                <a href="{% url 'security_dashboard' %}" class="nav-link {% if 'security' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-shield-alt"></i>
+                    <span class="nav-text">Security Dashboard</span>
+                    <span class="badge-sidebar">New</span>
+                </a>
+                <a href="{% url 'incident_list' %}" class="nav-link {% if 'incident' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span class="nav-text">Incidents</span>
+                </a>
+                <a href="{% url 'governancerecord_list' %}" class="nav-link {% if 'governancerecord' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-file-contract"></i>
+                    <span class="nav-text">Governance</span>
+                </a>
+                <a href="{% url 'cqc_member_list' %}" class="nav-link {% if 'cqc_member' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-user-shield"></i>
+                    <span class="nav-text">CQC Members</span>
+                </a>
+            </div>
+            
+            <!-- Communication Section -->
+            <div class="menu-section">
+                <div class="menu-title">Communication</div>
+                <a href="{% url 'staffhandover_list' %}" class="nav-link {% if 'staffhandover' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-comments"></i>
+                    <span class="nav-text">Staff Handovers</span>
+                </a>
+                <a href="{% url 'managementhandover_list' %}" class="nav-link {% if 'managementhandover' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-briefcase"></i>
+                    <span class="nav-text">Management Handovers</span>
+                </a>
+                <a href="{% url 'managementdailynote_list' %}" class="nav-link {% if 'managementdailynote' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-sticky-note"></i>
+                    <span class="nav-text">Management Notes</span>
+                </a>
+            </div>
+            
+            <!-- System Section -->
+            <div class="menu-section">
+                <div class="menu-title">System</div>
+                <a href="{% url 'document_list' %}" class="nav-link {% if 'document' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-file"></i>
+                    <span class="nav-text">Documents</span>
+                </a>
+                <a href="{% url 'systemsetting_list' %}" class="nav-link {% if 'systemsetting' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-cog"></i>
+                    <span class="nav-text">System Settings</span>
+                </a>
+                <a href="{% url 'role_list' %}" class="nav-link {% if 'role' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-user-cog"></i>
+                    <span class="nav-text">Roles & Permissions</span>
+                </a>
+            </div>
+            
+            <!-- Reports Section -->
+            <div class="menu-section">
+                <div class="menu-title">Reports</div>
+                <a href="{% url 'report_daily_activities' %}" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    <span class="nav-text">Daily Activities</span>
+                </a>
+                <a href="{% url 'report_medication' %}" class="nav-link">
+                    <i class="fas fa-pills"></i>
+                    <span class="nav-text">Medication Report</span>
+                </a>
+                <a href="{% url 'report_incidents' %}" class="nav-link">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span class="nav-text">Incident Report</span>
+                </a>
+                <a href="{% url 'report_staff_shifts' %}" class="nav-link">
+                    <i class="fas fa-users-cog"></i>
+                    <span class="nav-text">Staff Shifts Report</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-content">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="mobile-toggle" id="mobileToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                </div>
+                
+                <div class="user-menu">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-2"></i>
+                            {{ request.user.get_full_name|default:request.user.username }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Content Wrapper -->
+        <main class="content-wrapper fade-in">
+            <!-- Messages -->
+            {% if messages %}
+            <div class="messages mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Page Content -->
+            {% block content %}
+            <!-- Content will be injected here -->
+            {% endblock %}
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Sidebar Toggle Functionality
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mobileToggle = document.getElementById('mobileToggle');
+        const overlay = document.getElementById('overlay');
+        
+        // Toggle sidebar collapse/expand
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+            
+            // Change icon based on state
+            const icon = this.querySelector('i');
+            if (sidebar.classList.contains('collapsed')) {
+                icon.className = 'fas fa-bars';
+            } else {
+                icon.className = 'fas fa-times';
+            }
+        });
+        
+        // Mobile toggle functionality
+        mobileToggle.addEventListener('click', function() {
+            sidebar.classList.add('mobile-open');
+            overlay.classList.add('active');
+        });
+        
+        // Close sidebar when clicking overlay
+        overlay.addEventListener('click', function() {
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+        });
+        
+        // Auto-close sidebar on mobile when clicking a link
+        if (window.innerWidth <= 768) {
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    sidebar.classList.remove('mobile-open');
+                    overlay.classList.remove('active');
+                });
+            });
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('mobile-open');
+                overlay.classList.remove('active');
+            }
+        });
+        
+        // Add active state to current page
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+    
+    {% block extra_js %}
+    <!-- Additional JavaScript will be injected here -->
+    {% endblock %}
+</body>
+</html>
