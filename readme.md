@@ -52,7 +52,7 @@ Unlike traditional healthcare apps, **Ci-Wellbeing** is built with **security as
 
 ## 🎥 Demo Video  
 
-▶️ [Watch Demo on YouTube](https://www.youtube.com/your-demo-link)  
+▶️ [Watch Demo on YouTube](https://youtu.be/UKmC7SD5-bw)  
 
 ---
 
@@ -114,8 +114,8 @@ Submit a pull request
 
 👨‍💻 Author
 
-Cipher Knights
-🔗 www.cipherknights.com
+John Usiabulu
+🔗 johnusiabulu@cipherknights.com
 
 
 
